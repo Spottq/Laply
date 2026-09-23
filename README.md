@@ -73,7 +73,7 @@ You need JDK 21 and the Android SDK (platform 37).
 ./gradlew :app:assembleRelease      # signed with the debug key, for sideloading
 ```
 
-`gradle.properties` points `org.gradle.java.home` at a local Android Studio JBR. Change that path, or remove the line and set `JAVA_HOME`, to match your machine.
+Requires JDK 21 (Android Studio's bundled JBR works): set `JAVA_HOME`, or `org.gradle.java.home` in your user-level `~/.gradle/gradle.properties`.
 
 ## Data sources
 
