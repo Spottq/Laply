@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Samsung One UI lock-screen widget (com.flexy.f1live.widget.lock). -->
+    <string name="lock_widget_label">Laply · next session</string>
+    <string name="lock_widget_description">The next F1 session and a countdown, on the lock screen</string>
+
+    <!-- Top line, e.g. "FP1 · Azerbaijan GP"; %1$s the short session name, %2$s the Grand Prix. -->
+    <string name="lock_widget_title">%1$s · %2$s</string>
+    <!-- Bottom line while a session runs, e.g. "LIVE · FP1"; %1$s the short session name. -->
+    <string name="lock_widget_live">LIVE · %1$s</string>
+    <string name="lock_widget_empty_title">Laply</string>
+    <string name="lock_widget_empty_body">No sessions</string>
+
+    <!-- Short session names, the F1 timing screen abbreviations. -->
+    <string name="lock_session_fp1">FP1</string>
+    <string name="lock_session_fp2">FP2</string>
+    <string name="lock_session_fp3">FP3</string>
+    <string name="lock_session_sprint_qualifying">SQ</string>
+    <string name="lock_session_sprint">Sprint</string>
+    <string name="lock_session_qualifying">Quali</string>
+    <string name="lock_session_race">Race</string>
+
+    <!-- Static picker preview. -->
+    <string name="lock_widget_preview_title" translatable="false">Quali · Italian GP</string>
+    <string name="lock_widget_preview_countdown" translatable="false">in 1d 13h</string>
+</resources>

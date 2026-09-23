@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Samsung One UI widget attributes, read by Samsung's widget hosts from the appwidget-provider
+     XML (app: namespace): shared by the home-screen widgets and the lock-screen widget (whose own
+     extra attributes live in attrs_samsung_lock.xml). As declared by twidget, res/values/attrs.xml
+     (MIT, (c) 2026 Josh Skinner, github.com/thatjoshguy67/twidget). -->
+<resources>
+    <!-- Samsung OneUI widget style flags - required for launcher blur -->
+    <attr name="widgetStyle" format="integer">
+        <flag name="colorful" value="0x1" />
+        <flag name="monotone" value="0x2" />
+    </attr>
+
+    <!-- Samsung OneUI widget size flags - One UI Home skips the blur when the size is unknown -->
+    <attr name="widgetSize" format="integer">
+        <flag name="tiny" value="0x1" />
+        <flag name="small" value="0x2" />
+        <flag name="wideSmall" value="0x4" />
+        <flag name="medium" value="0x8" />
+        <flag name="large" value="0x10" />
+        <flag name="extraLarge" value="0x20" />
+        <flag name="extraLargeLong" value="0x40" />
+    </attr>
+</resources>

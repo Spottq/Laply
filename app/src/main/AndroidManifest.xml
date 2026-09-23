@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+
+    <!-- Auto-follow: one exact alarm a few minutes before the next session. Only an exact alarm
+         may start a foreground service from the background (Android 12+). USE_EXACT_ALARM is
+         granted at install on API 33+; on API 31/32 SCHEDULE_EXACT_ALARM is granted by default. -->
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Alarms do not survive a reboot; the receiver only re-arms it, it never starts the service. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:name=".F1App"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.F1Live">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- specialUse, not dataSync: this is a user-visible live scoreboard, not a transfer, and
+             Android 15 caps dataSync at 6 h per 24 h - a race weekend day with a delayed race can
+             hit that and get the service killed mid-session. -->
+        <service
+            android:name=".live.LiveUpdateService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Live sports scores: an ongoing Live Update notification with the timing of an F1 session the user chose to follow, shown only while that session runs." />
+        </service>
+
+        <receiver
+            android:name=".live.AutoFollowReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Home-screen widget: one "Laply" picker entry, resizable from 2x1 up; its redraw
+             alarm goes through AutoFollowReceiver above. semConfigureActivity puts "Settings" in
+             One UI Home's long-press menu (as in twidget / blur-widget-demo, MIT (c) 2026 Josh
+             Skinner); widgetinfo lists the cell sizes One UI may resize it to. -->
+        <receiver
+            android:name=".widget.NextSessionWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_f1_live_info" />
+            <meta-data
+                android:name="com.sec.android.appwidget.widgetinfo"
+                android:resource="@xml/widget_supported_cell_size_info" />
+            <meta-data
+                android:name="android.appwidget.provider.semConfigureActivity"
+                android:value="com.flexy.f1live.widget.WidgetConfigActivity" />
+        </receiver>
+
+        <!-- The widget's appearance settings, from its long-press menu (and not forced on add:
+             configuration_optional). Exported: the launcher starts it. -->
+        <activity
+            android:name=".widget.WidgetConfigActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="@string/widget_config_title"
+            android:taskAffinity=""
+            android:theme="@style/Theme.F1Live">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <!-- Samsung One UI lock-screen / AOD / cover-screen widget, 2x1 (widget/lock). Found by
+             Samsung's host through widgetCategory 0x2000 and the samsung.appwidget.monotone.info
+             metadata; stock launchers never list it. Redraws itself via its own alarm. -->
+        <receiver
+            android:name=".widget.lock.SamsungLockWidgetReceiver"
+            android:exported="true"
+            android:label="@string/lock_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/lock_2x1_info" />
+            <meta-data
+                android:name="samsung.appwidget.monotone.info"
+                android:resource="@xml/lock_2x1_info_oneui" />
+        </receiver>
+
+        <!-- Legacy Samsung SystemUI lock-screen "ServiceBox" pages ask for RemoteViews here. -->
+        <receiver
+            android:name=".widget.lock.SamsungLockServiceBoxReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.samsung.android.intent.action.REQUEST_SERVICEBOX_REMOTEVIEWS" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Samsung One UI lock-screen / AOD widget, 2x2, for tablets and foldables
+             (widget/lock/SamsungLockWidgetLarge.kt). Disabled here: SamsungLockWidgetLarge.syncEnabled
+             switches it on at run time on sw600dp / hinge devices only, as the LockWidgets project
+             does, so phones never list it. Redraws itself via its own alarm. -->
+        <receiver
+            android:name=".widget.lock.SamsungLockWidgetLargeReceiver"
+            android:enabled="false"
+            android:exported="true"
+            android:label="@string/lock_large_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/lock_2x2_info" />
+            <meta-data
+                android:name="samsung.appwidget.monotone.info"
+                android:resource="@xml/lock_2x2_info_oneui" />
+        </receiver>
+    </application>
+</manifest>

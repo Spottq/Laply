@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Samsung One UI lock-screen widget, 2x1 (widget/lock/SamsungLockWidget.kt). Transparent, no
+    background, plain white text in Samsung's "sec" font like the system lock-screen widgets: the
+    host recolours TextViews to suit the wallpaper and AOD, so no colour is ever set from code.
+    Top line: "FP1 · Azerbaijan GP"; bottom line: "in 1d 12h" / "in 16h 41m" / "LIVE · FP1", in the
+    app's wording. Also the picker preview, hence the sample text.
+    Behind the text, when the "Circuit background" setting is on: the next weekend's circuit
+    outline as a faint white bitmap (bitmaps are not recoloured by the host), pinned to the end.
+    Pattern adapted from twidget (MIT, © 2026 Josh Skinner), res/layout/lockscreen_message_2x1.xml.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/lock_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/lock_outline"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:contentDescription="@null"
+        android:importantForAccessibility="no"
+        android:paddingStart="4dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="8dp"
+        android:scaleType="fitEnd"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingStart="8dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="4dp">
+
+    <TextView
+        android:id="@+id/lock_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:fontFamily="sec"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:text="@string/lock_widget_preview_title"
+        android:textColor="#FFFFFF"
+        android:textFontWeight="500"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/lock_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:fontFamily="sec"
+        android:fontFeatureSettings="tnum"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:text="@string/lock_widget_preview_countdown"
+        android:textColor="#FFFFFF"
+        android:textFontWeight="700"
+        android:textSize="18sp" />
+
+    </LinearLayout>
+</FrameLayout>

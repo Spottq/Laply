@@ -1,0 +1,40 @@
+<resources>
+    <string name="app_name">Laply</string>
+    <string name="tab_schedule">Schedule</string>
+    <string name="tab_live">Live</string>
+    <string name="tab_standings">Standings</string>
+    <string name="standings_drivers">Drivers</string>
+    <string name="standings_constructors">Teams</string>
+    <string name="follow">Follow</string>
+    <string name="air_temp">Air Temp</string>
+    <string name="track_temp">Track Temp</string>
+    <string name="no_live_session">No live session</string>
+    <string name="session_over">Session finished · Follow to get a Live Update for the next session</string>
+    <string name="live_timing_unreachable">Live timing is unreachable right now: neither F1 nor ESPN answers.</string>
+    <string name="next_session">Next session</string>
+    <!-- Large-screen Live tab: the circuit map and the conditions card of the left pane. -->
+    <string name="circuit">Circuit</string>
+    <plurals name="circuit_turns">
+        <item quantity="one">%1$d turn</item>
+        <item quantity="other">%1$d turns</item>
+    </plurals>
+    <string name="conditions">Conditions</string>
+    <string name="humidity">Humidity</string>
+    <string name="rainfall">Rain</string>
+    <string name="rain_wet">Wet</string>
+    <string name="rain_dry">Dry</string>
+    <string name="track_status">Track</string>
+    <!-- Overline of the Live tab's next-weekend card; %1$d is the round number. -->
+    <string name="next_round_overline">Next round · R%1$d</string>
+    <string name="next_round_open_schedule">Open schedule</string>
+    <!-- Countdown to the next session: days/hours, hours/minutes, minutes. -->
+    <string name="countdown_days_hours">in %1$dd %2$dh</string>
+    <string name="countdown_hours_minutes">in %1$dh %2$dm</string>
+    <string name="countdown_minutes">in %1$d min</string>
+    <string name="countdown_now">Starting now</string>
+    <string name="driver">Driver</string>
+    <string name="time">Time</string>
+    <string name="gap">Gap</string>
+    <string name="channel_live_name">Live timing</string>
+    <string name="channel_live_desc">Live session updates in the status bar</string>
+</resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Samsung's companion metadata (manifest meta-data "samsung.appwidget.monotone.info") for the
+     2x2 lock-screen widget in lock_2x2_info.xml: the same layout for the medium and large slots. -->
+<samsung-appwidget-info xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:allowMultipleSizes="true"
+    app:initialLayoutLarge="@layout/widget_lock_2x2"
+    app:initialLayoutMedium="@layout/widget_lock_2x2"
+    app:monotoneInitialLayoutLarge="@layout/widget_lock_2x2"
+    app:monotoneInitialLayoutMedium="@layout/widget_lock_2x2"
+    app:monotonePreviewLayoutLarge="@layout/widget_lock_2x2"
+    app:monotonePreviewLayoutMedium="@layout/widget_lock_2x2"
+    app:previewLayoutLarge="@layout/widget_lock_2x2"
+    app:previewLayoutMedium="@layout/widget_lock_2x2"
+    app:previewSize="medium"
+    app:targetHost="lock_and_aod"
+    app:widgetSize="medium|large" />

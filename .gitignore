@@ -1,0 +1,32 @@
+# Gradle / Kotlin
+.gradle/
+.kotlin/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local machine config
+local.properties
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Build outputs and signing material
+*.apk
+*.aab
+*.apks
+*.ap_
+*.dex
+*.jks
+*.keystore
+*.p12
+*.pem
+keystore.properties
+output-metadata.json
+
+# Logs / dumps
+*.log
+*.hprof

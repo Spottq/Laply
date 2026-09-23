@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Samsung One UI lock-screen widget, 2x2 (com.flexy.f1live.widget.lock.SamsungLockWidgetLarge). -->
+    <string name="lock_large_label">Laply · next round</string>
+    <string name="lock_large_description">The next F1 session, a countdown and what follows, on a tablet lock screen</string>
+
+    <!-- "FP3 · Sat 12:30": %1$s the short session name, %2$s when. -->
+    <string name="lock_large_session_when">%1$s · %2$s</string>
+    <!-- A later session of another weekend: "Dutch GP · FP1 · Fri 12:30". -->
+    <string name="lock_large_row_other_weekend">%1$s · %2$s · %3$s</string>
+    <!-- "Today 16:00"; %1$s the time. -->
+    <string name="lock_large_when_today">Today %1$s</string>
+    <!-- "Tomorrow 16:00"; %1$s the time. -->
+    <string name="lock_large_when_tomorrow">Tomorrow %1$s</string>
+
+    <!-- Static picker preview. -->
+    <string name="lock_large_preview_overline" translatable="false">NEXT ROUND · R16</string>
+    <string name="lock_large_preview_title" translatable="false">Italian GP</string>
+    <string name="lock_large_preview_session" translatable="false">FP3 · Sat 12:30</string>
+    <string name="lock_large_preview_countdown" translatable="false">in 1d 13h</string>
+    <string name="lock_large_preview_row1" translatable="false">Quali · Sat 16:00</string>
+    <string name="lock_large_preview_row2" translatable="false">Race · Sun 15:00</string>
+</resources>

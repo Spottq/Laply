@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings owned by the Settings screen (com.flexy.f1live.ui.settings). -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_dynamic_color">Dynamic color</string>
+    <string name="settings_dynamic_color_desc">Use colors from your wallpaper instead of F1 red</string>
+
+    <string name="settings_section_live">Live Update</string>
+    <string name="settings_auto_live">Automatic Live Update</string>
+    <string name="settings_auto_live_desc">Automatically show the Live Update when a session starts</string>
+    <string name="settings_metric_style">Metric style (Android 17)</string>
+    <string name="settings_metric_style_desc">Show the gaps between the leaders as metrics instead of a progress bar</string>
+    <string name="settings_metric_style_unsupported">Requires Android 17</string>
+    <string name="settings_test_live">Test Live Update</string>
+    <string name="settings_test_live_desc">Play a one-minute demo race to preview the notification</string>
+
+    <string name="settings_section_widgets">Widgets</string>
+    <string name="settings_widget_track_background">Circuit background</string>
+    <string name="settings_widget_track_background_desc">Draw a faint outline of the circuit behind the home-screen widgets</string>
+    <string name="settings_widget_samsung_blur">Samsung blur background</string>
+    <string name="settings_widget_samsung_blur_desc">Translucent widgets over the blurred wallpaper, like the built-in One UI widgets</string>
+    <string name="settings_widget_opacity">Background opacity</string>
+    <string name="settings_widget_opacity_glass">Glass</string>
+    <string name="settings_widget_opacity_light">Light</string>
+    <string name="settings_widget_opacity_medium">Medium</string>
+    <string name="settings_widget_opacity_solid">Solid</string>
+    <string name="settings_widget_tone">Widget tone</string>
+
+    <string name="settings_section_about">About</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_check_updates">Check for updates</string>
+    <string name="settings_check_updates_desc">Look for a new version once a day and notify when one is out</string>
+    <string name="settings_check_now">Check now</string>
+    <string name="settings_check_now_desc">Look for a new release on GitHub</string>
+    <string name="settings_checking">Checking&#8230;</string>
+    <string name="update_up_to_date">You’re up to date</string>
+    <!-- %1$s is the new version, e.g. "1.1". -->
+    <string name="update_available">Update %1$s available</string>
+    <string name="update_check_failed">Couldn’t check for updates</string>
+    <string name="update_download">Download</string>
+
+    <!-- Update notification (com.flexy.f1live.update). -->
+    <string name="channel_updates_name">App updates</string>
+    <string name="channel_updates_desc">A new version of Laply is available</string>
+    <!-- %1$s is the new version, e.g. "1.1". -->
+    <string name="update_notif_title">Laply %1$s is available</string>
+    <string name="update_notif_text">Tap to download</string>
+    <string name="update_release_notes">Release notes</string>
+</resources>

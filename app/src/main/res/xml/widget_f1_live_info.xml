@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The "Laply" home-screen widget: 4x2 by default, resizable from 2x1 to any size the launcher
+     allows (tablets, 5-column grids); the layout adapts to the exact size (widget/F1Widget.kt).
+     minWidth/minHeight are for launchers that ignore targetCell*: the platform sizing table's
+     (73n - 16) dp wide in portrait by (66m - 15) dp tall in landscape.
+     configure + reconfigurable|configuration_optional: the appearance settings are offered from
+     the widget's long-press menu ("Customize" / One UI "Settings") but never forced when adding.
+     app:widgetStyle / app:widgetSize are Samsung's (values/attrs.xml): One UI Home only blurs the
+     wallpaper behind a "colorful" widget of a known size, as in blur-widget-demo
+     (MIT, (c) 2026 Josh Skinner). -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:configure="com.flexy.f1live.widget.WidgetConfigActivity"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:maxResizeWidth="1000dp"
+    android:maxResizeHeight="1000dp"
+    android:minWidth="276dp"
+    android:minHeight="117dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="40dp"
+    android:previewLayout="@layout/widget_preview"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable|configuration_optional"
+    app:widgetSize="small|wideSmall|medium|large|extraLarge|extraLargeLong"
+    app:widgetStyle="colorful" />

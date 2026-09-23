@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Samsung One UI lock-screen / cover-screen widget attributes, read by Samsung's widget host BY
+    NAME from xml/lock_2x1_info.xml and xml/lock_2x1_info_oneui.xml, so names and flag values must
+    stay exactly as they are. widgetStyle and widgetSize are shared with the home-screen widgets and
+    live in values/attrs.xml - do not declare them here too (duplicate attr = resource merge error).
+    Adapted from twidget (MIT, © 2026 Josh Skinner), res/values/attrs.xml.
+-->
+<resources>
+    <attr name="allowMultipleSizes" format="boolean" />
+
+    <!-- Per-size layouts read by Samsung's lock-screen widget picker. -->
+    <attr name="initialLayoutSmall" format="reference" />
+    <attr name="initialLayoutMedium" format="reference" />
+    <attr name="monotonePreviewLayoutSmall" format="reference" />
+    <attr name="monotonePreviewLayoutMedium" format="reference" />
+    <attr name="previewLayoutSmall" format="reference" />
+    <attr name="previewLayoutMedium" format="reference" />
+
+    <!-- Samsung One UI target host flags. -->
+    <attr name="targetHost" format="integer">
+        <flag name="home" value="0x1" />
+        <flag name="lock_and_aod" value="0x2" />
+        <flag name="cover" value="0x4" />
+        <flag name="edge" value="0x8" />
+        <flag name="dex_home" value="0x10" />
+        <flag name="smart_page" value="0x20" />
+    </attr>
+</resources>

@@ -1,0 +1,2716 @@
+[
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "12": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:09.056Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "43": {
+     "Sectors": {
+      "2": {
+       "Segments": {
+        "8": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:09.141Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "55": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "1": {
+         "Status": 2064
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:09.213Z"
+ ],
+ [
+  "DriverList",
+  {
+   "3": {
+    "Line": 10
+   },
+   "5": {
+    "Line": 9
+   },
+   "16": {
+    "Line": 8
+   },
+   "27": {
+    "Line": 14
+   },
+   "30": {
+    "Line": 13
+   },
+   "31": {
+    "Line": 16
+   },
+   "43": {
+    "Line": 7
+   },
+   "44": {
+    "Line": 11
+   },
+   "55": {
+    "Line": 15
+   },
+   "87": {
+    "Line": 12
+   }
+  },
+  "2026-09-05T14:33:09.275Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "3": {
+     "Line": 10,
+     "Position": "10"
+    },
+    "5": {
+     "Line": 9,
+     "Position": "9"
+    },
+    "12": {
+     "Sectors": {
+      "0": {
+       "Value": "34.749",
+       "PersonalFastest": false
+      },
+      "1": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "2": {
+       "Value": "",
+       "PersonalFastest": false
+      }
+     },
+     "Speeds": {
+      "I1": {
+       "Value": "243",
+       "PersonalFastest": false
+      },
+      "I2": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "FL": {
+       "Value": ""
+      }
+     }
+    },
+    "16": {
+     "Stats": {
+      "1": {
+       "TimeDifftoPositionAhead": "+0.106"
+      }
+     },
+     "Line": 8,
+     "Position": "8"
+    },
+    "27": {
+     "Line": 14,
+     "Position": "14"
+    },
+    "30": {
+     "Line": 13,
+     "Position": "13"
+    },
+    "31": {
+     "Line": 16,
+     "Position": "16"
+    },
+    "43": {
+     "BestLapTimes": {
+      "1": {
+       "Value": "1:22.403",
+       "Lap": 8
+      }
+     },
+     "Stats": {
+      "1": {
+       "TimeDiffToFastest": "+0.386",
+       "TimeDifftoPositionAhead": "+0.058"
+      }
+     },
+     "Line": 7,
+     "Position": "7",
+     "NumberOfLaps": 9,
+     "Sectors": {
+      "2": {
+       "Value": "27.627"
+      }
+     },
+     "Speeds": {
+      "FL": {
+       "Value": "289"
+      }
+     },
+     "BestLapTime": {
+      "Value": "1:22.403",
+      "Lap": 8
+     },
+     "LastLapTime": {
+      "Value": "1:22.403",
+      "PersonalFastest": true
+     }
+    },
+    "44": {
+     "Line": 11,
+     "Position": "11"
+    },
+    "55": {
+     "Line": 15,
+     "Position": "15"
+    },
+    "87": {
+     "Line": 12,
+     "Position": "12"
+    }
+   }
+  },
+  "2026-09-05T14:33:09.275Z"
+ ],
+ [
+  "TimingAppData",
+  {
+   "Lines": {
+    "3": {
+     "Line": 10
+    },
+    "5": {
+     "Line": 9
+    },
+    "16": {
+     "Line": 8
+    },
+    "27": {
+     "Line": 14
+    },
+    "30": {
+     "Line": 13
+    },
+    "31": {
+     "Line": 16
+    },
+    "43": {
+     "Line": 7
+    },
+    "44": {
+     "Line": 11
+    },
+    "55": {
+     "Line": 15
+    },
+    "87": {
+     "Line": 12
+    }
+   }
+  },
+  "2026-09-05T14:33:09.275Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "12": {
+     "Sectors": {
+      "0": {
+       "PreviousValue": "34.749"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:09.313Z"
+ ],
+ [
+  "TimingStats",
+  {
+   "Lines": {
+    "27": {
+     "BestSectors": {
+      "2": {
+       "Position": 15
+      }
+     }
+    },
+    "43": {
+     "BestSectors": {
+      "2": {
+       "Position": 14,
+       "Value": "27.627"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:09.313Z"
+ ],
+ [
+  "TimingStats",
+  {
+   "Lines": {
+    "3": {
+     "PersonalBestLapTime": {
+      "Position": 10
+     }
+    },
+    "5": {
+     "PersonalBestLapTime": {
+      "Position": 9
+     }
+    },
+    "16": {
+     "PersonalBestLapTime": {
+      "Position": 8
+     }
+    },
+    "43": {
+     "PersonalBestLapTime": {
+      "Lap": 8,
+      "Position": 7,
+      "Value": "1:22.403"
+     }
+    },
+    "44": {
+     "PersonalBestLapTime": {
+      "Position": 11
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:09.313Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "43": {
+     "Sectors": {
+      "2": {
+       "PreviousValue": "27.627"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:09.323Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "87": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:09.377Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "55": {
+     "Speeds": {
+      "ST": {
+       "Value": "248"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:09.608Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "3": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:09.815Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "31": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:10.175Z"
+ ],
+ [
+  "TimingAppData",
+  {
+   "Lines": {
+    "41": {
+     "Stints": {
+      "2": {
+       "TotalLaps": 2
+      }
+     }
+    },
+    "43": {
+     "Stints": {
+      "2": {
+       "TotalLaps": 2
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:10.226Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "81": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:10.429Z"
+ ],
+ [
+  "TimingAppData",
+  {
+   "Lines": {
+    "41": {
+     "Stints": {
+      "1": {
+       "LapFlags": 0
+      },
+      "2": {
+       "LapTime": "1:22.345",
+       "LapNumber": 9,
+       "LapFlags": 1
+      }
+     }
+    },
+    "43": {
+     "Stints": {
+      "0": {
+       "LapFlags": 0
+      },
+      "2": {
+       "LapTime": "1:22.403",
+       "LapNumber": 9,
+       "LapFlags": 1
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:10.429Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "63": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:10.903Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "16": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:10.903Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "81": {
+     "Speeds": {
+      "ST": {
+       "Value": "215"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:10.927Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "63": {
+     "Sectors": {
+      "0": {
+       "Value": "33.412",
+       "PersonalFastest": false
+      },
+      "1": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "2": {
+       "Value": "",
+       "PersonalFastest": false
+      }
+     },
+     "Speeds": {
+      "I1": {
+       "Value": "268",
+       "PersonalFastest": false
+      },
+      "I2": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "FL": {
+       "Value": ""
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:10.942Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "41": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        },
+        "1": {
+         "Status": 0
+        },
+        "2": {
+         "Status": 0
+        },
+        "3": {
+         "Status": 0
+        },
+        "4": {
+         "Status": 0
+        },
+        "5": {
+         "Status": 0
+        }
+       }
+      },
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 0
+        },
+        "1": {
+         "Status": 0
+        },
+        "2": {
+         "Status": 0
+        },
+        "3": {
+         "Status": 0
+        },
+        "4": {
+         "Status": 0
+        },
+        "5": {
+         "Status": 0
+        },
+        "6": {
+         "Status": 0
+        }
+       }
+      },
+      "2": {
+       "Segments": {
+        "0": {
+         "Status": 0
+        },
+        "1": {
+         "Status": 0
+        },
+        "2": {
+         "Status": 0
+        },
+        "3": {
+         "Status": 0
+        },
+        "4": {
+         "Status": 0
+        },
+        "5": {
+         "Status": 0
+        },
+        "6": {
+         "Status": 0
+        },
+        "7": {
+         "Status": 0
+        },
+        "8": {
+         "Status": 0
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:11.565Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "44": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:11.741Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "63": {
+     "Sectors": {
+      "0": {
+       "PreviousValue": "33.412"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:12.327Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "27": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:12.716Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "12": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:12.974Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "27": {
+     "Speeds": {
+      "ST": {
+       "Value": "186",
+       "PersonalFastest": false
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:13.459Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "43": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        },
+        "1": {
+         "Status": 0
+        },
+        "2": {
+         "Status": 0
+        },
+        "3": {
+         "Status": 0
+        },
+        "4": {
+         "Status": 0
+        },
+        "5": {
+         "Status": 0
+        }
+       }
+      },
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 0
+        },
+        "1": {
+         "Status": 0
+        },
+        "2": {
+         "Status": 0
+        },
+        "3": {
+         "Status": 0
+        },
+        "4": {
+         "Status": 0
+        },
+        "5": {
+         "Status": 0
+        },
+        "6": {
+         "Status": 0
+        }
+       }
+      },
+      "2": {
+       "Segments": {
+        "0": {
+         "Status": 0
+        },
+        "1": {
+         "Status": 0
+        },
+        "2": {
+         "Status": 0
+        },
+        "3": {
+         "Status": 0
+        },
+        "4": {
+         "Status": 0
+        },
+        "5": {
+         "Status": 0
+        },
+        "6": {
+         "Status": 0
+        },
+        "7": {
+         "Status": 0
+        },
+        "8": {
+         "Status": 0
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:13.503Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "55": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:13.687Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "10": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:13.848Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "1": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:13.962Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "87": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:14.174Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "87": {
+     "Sectors": {
+      "0": {
+       "Value": "34.450",
+       "PersonalFastest": false
+      },
+      "1": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "2": {
+       "Value": "",
+       "PersonalFastest": false
+      }
+     },
+     "Speeds": {
+      "I1": {
+       "Value": "260",
+       "PersonalFastest": false
+      },
+      "I2": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "FL": {
+       "Value": ""
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:14.228Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "5": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:14.665Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "63": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:14.983Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "81": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:15.186Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "5": {
+     "Speeds": {
+      "ST": {
+       "Value": "181"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:15.404Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "41": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:16.141Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "30": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:16.141Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "31": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:16.386Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "41": {
+     "Speeds": {
+      "ST": {
+       "Value": "226"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:16.687Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "16": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:17.042Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "87": {
+     "Sectors": {
+      "0": {
+       "PreviousValue": "34.450"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:17.386Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "87": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:17.741Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "27": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:17.841Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "3": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:17.841Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "12": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:18.315Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "10": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:19.049Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "43": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:19.065Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "10": {
+     "Sectors": {
+      "0": {
+       "Value": "35.901",
+       "PersonalFastest": false
+      },
+      "1": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "2": {
+       "Value": "",
+       "PersonalFastest": false
+      }
+     },
+     "Speeds": {
+      "I1": {
+       "Value": "222",
+       "PersonalFastest": false
+      },
+      "I2": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "FL": {
+       "Value": ""
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:19.159Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "44": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:19.174Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "43": {
+     "Speeds": {
+      "ST": {
+       "Value": "203",
+       "OverallFastest": false,
+       "PersonalFastest": false
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:19.721Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "5": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:19.752Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "1": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:20.549Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "41": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:20.943Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "31": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:20.987Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "63": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:21.143Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "31": {
+     "Sectors": {
+      "0": {
+       "Value": "32.963",
+       "PersonalFastest": false
+      },
+      "1": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "2": {
+       "Value": "",
+       "PersonalFastest": false
+      }
+     },
+     "Speeds": {
+      "I1": {
+       "Value": "254"
+      },
+      "I2": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "FL": {
+       "Value": ""
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:21.19Z"
+ ],
+ [
+  "Heartbeat",
+  {
+   "Utc": "2026-09-05T14:33:23.3413756Z",
+   "_kf": true
+  },
+  "2026-09-05T14:33:21.1993987Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "16": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:21.362Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "16": {
+     "Sectors": {
+      "0": {
+       "Value": "31.950",
+       "PersonalFastest": false
+      },
+      "1": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "2": {
+       "Value": "",
+       "PersonalFastest": false
+      }
+     },
+     "Speeds": {
+      "I1": {
+       "Value": "281",
+       "PersonalFastest": false
+      },
+      "I2": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "FL": {
+       "Value": ""
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:21.44Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "55": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:21.55Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "30": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:22.096Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "10": {
+     "Sectors": {
+      "0": {
+       "PreviousValue": "35.901"
+      }
+     }
+    },
+    "16": {
+     "Sectors": {
+      "0": {
+       "PreviousValue": "31.950"
+      }
+     }
+    },
+    "31": {
+     "Sectors": {
+      "0": {
+       "PreviousValue": "32.963"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:22.393Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "87": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:22.924Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "12": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:23.096Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "10": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:23.377Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "43": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:23.954Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "81": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:23.964Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "3": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:24.087Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "31": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:24.742Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "16": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:25.191Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "27": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:25.227Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "44": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:25.227Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "1": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:25.724Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "1": {
+     "Sectors": {
+      "0": {
+       "Value": "34.355",
+       "PersonalFastest": false
+      },
+      "1": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "2": {
+       "Value": "",
+       "PersonalFastest": false
+      }
+     },
+     "Speeds": {
+      "I1": {
+       "Value": "212",
+       "PersonalFastest": false
+      },
+      "I2": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "FL": {
+       "Value": ""
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:25.834Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "63": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:25.834Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "30": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:26.302Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "30": {
+     "PitOut": false,
+     "Status": 576,
+     "Speeds": {
+      "I1": {
+       "Value": "277"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:26.334Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "55": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:27.005Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "87": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:27.255Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "5": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:27.302Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "1": {
+     "Sectors": {
+      "0": {
+       "PreviousValue": "34.355"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:27.318Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "3": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:28.459Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "3": {
+     "PitOut": false,
+     "Status": 576,
+     "Speeds": {
+      "I1": {
+       "Value": "281"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:28.552Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "12": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:28.724Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "41": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:28.865Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "10": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:29.505Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "44": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:29.709Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "30": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:29.834Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "44": {
+     "Sectors": {
+      "0": {
+       "Value": "32.068",
+       "PersonalFastest": false
+      },
+      "1": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "2": {
+       "Value": "",
+       "PersonalFastest": false
+      }
+     },
+     "Speeds": {
+      "I1": {
+       "Value": "276",
+       "PersonalFastest": false
+      },
+      "I2": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "FL": {
+       "Value": ""
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:29.834Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "31": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:30.005Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "1": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:30.24Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "16": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:30.302Z"
+ ],
+ [
+  "TimingStats",
+  {
+   "Lines": {
+    "10": {
+     "BestSpeeds": {
+      "I1": {
+       "Position": 3
+      }
+     }
+    },
+    "12": {
+     "BestSpeeds": {
+      "I1": {
+       "Position": 2
+      }
+     }
+    },
+    "43": {
+     "BestSpeeds": {
+      "I1": {
+       "Position": 4
+      }
+     }
+    },
+    "55": {
+     "BestSpeeds": {
+      "I1": {
+       "Position": 1,
+       "Value": "320"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:30.771Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "55": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2051
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:30.818Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "43": {
+     "Speeds": {
+      "I1": {
+       "OverallFastest": false
+      }
+     }
+    },
+    "55": {
+     "PitOut": false,
+     "Status": 576,
+     "Speeds": {
+      "I1": {
+       "Value": "320",
+       "OverallFastest": true,
+       "PersonalFastest": true
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:30.896Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "81": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:30.974Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "63": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:31.427Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "3": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:31.709Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "27": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:31.99Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "43": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:32.849Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "44": {
+     "Sectors": {
+      "0": {
+       "PreviousValue": "32.068"
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:32.865Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "87": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "3": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:33.037Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "44": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:33.209Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "5": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:33.396Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "55": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "0": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:33.943Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "16": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:34.224Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "31": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:34.49Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "12": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:34.927Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "10": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "2": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:34.99Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "41": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "4": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:35.021Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "30": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:35.334Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "81": {
+     "Sectors": {
+      "0": {
+       "Value": "35.440",
+       "PersonalFastest": false
+      },
+      "1": {
+       "Value": "",
+       "OverallFastest": false,
+       "PersonalFastest": false
+      },
+      "2": {
+       "Value": "",
+       "PersonalFastest": false
+      }
+     },
+     "Speeds": {
+      "I1": {
+       "Value": "263",
+       "PersonalFastest": false
+      },
+      "I2": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "FL": {
+       "Value": ""
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:35.615Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "81": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:35.615Z"
+ ],
+ [
+  "Heartbeat",
+  {
+   "Utc": "2026-09-05T14:33:38.3429919Z",
+   "_kf": true
+  },
+  "2026-09-05T14:33:36.1791214Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "1": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:36.396Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "27": {
+     "Sectors": {
+      "0": {
+       "Segments": {
+        "5": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:36.724Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "3": {
+     "Sectors": {
+      "1": {
+       "Segments": {
+        "1": {
+         "Status": 2048
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:36.802Z"
+ ],
+ [
+  "TimingData",
+  {
+   "Lines": {
+    "27": {
+     "Sectors": {
+      "0": {
+       "Value": "34.142",
+       "PersonalFastest": false
+      },
+      "1": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "2": {
+       "Value": "",
+       "PersonalFastest": false
+      }
+     },
+     "Speeds": {
+      "I1": {
+       "Value": "241",
+       "PersonalFastest": false
+      },
+      "I2": {
+       "Value": "",
+       "PersonalFastest": false
+      },
+      "FL": {
+       "Value": ""
+      }
+     }
+    }
+   }
+  },
+  "2026-09-05T14:33:36.912Z"
+ ]
+]
