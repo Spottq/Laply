@@ -16,8 +16,8 @@ import java.net.URLEncoder
  * slug ("Baku" for Azerbaijan, "Great_Britain" for the UK, "USA" for Austin but "Miami" and
  * "Las_Vegas" for the other two American rounds). Every entry in [F1_MAP_NAMES] below was verified
  * to answer HTTP 200; anything not in the table returns null rather than a guess, because a wrong
- * guess is a 404 that Coil would silently show as a blank card. Sepang and Madrid genuinely have no
- * map on the CDN, so they fall through to Wikipedia.
+ * guess is a 404 that Coil would silently show as a blank card. Sepang and Madrid have no map in this
+ * set; both are covered by the per-season track set instead (see [f1OutlineUrl]).
  */
 object CircuitMaps {
 
@@ -125,7 +125,7 @@ object CircuitMaps {
      */
     fun f1OutlineUrl(weekend: RaceWeekend): String? {
         val slug = outlineSlug(weekend) ?: return null
-        val year = weekend.season.coerceIn(OUTLINE_FIRST_YEAR, OUTLINE_LATEST_YEAR)
+        val year = outlineYear(weekend, slug)
         return "https://media.formula1.com/image/upload/f_png,w_640/common/f1/$year/track/${year}track$slug.png"
     }
 
@@ -136,7 +136,7 @@ object CircuitMaps {
      */
     fun f1DetailedMapUrl(weekend: RaceWeekend): String? {
         val slug = outlineSlug(weekend) ?: return null
-        val year = weekend.season.coerceIn(OUTLINE_FIRST_YEAR, OUTLINE_LATEST_YEAR)
+        val year = outlineYear(weekend, slug)
         return "https://media.formula1.com/image/upload/f_png,w_1200/common/f1/$year/track/" +
             "${year}track${slug}detailed.png"
     }
@@ -152,9 +152,22 @@ object CircuitMaps {
     private const val OUTLINE_FIRST_YEAR = 2025
     private const val OUTLINE_LATEST_YEAR = 2026
 
+    /** Slugs that only exist from a later track set: older seasons borrow that first drawing. */
+    private val OUTLINE_SLUG_FIRST_YEAR: Map<String, Int> = mapOf(
+        "kualalumpur" to 2026,
+        "madring" to 2026,
+    )
+
+    private fun outlineYear(weekend: RaceWeekend, slug: String): Int {
+        val first = OUTLINE_SLUG_FIRST_YEAR[slug] ?: OUTLINE_FIRST_YEAR
+        return weekend.season.coerceIn(first, OUTLINE_LATEST_YEAR)
+    }
+
     /** "circuitName locality raceName" needle -> outline slug; every slug answered HTTP 200. */
     private val OUTLINE_RULES: List<Pair<String, String>> = listOf(
-        "sepang" to "",
+        // F1 files Sepang under the nearest city.
+        "sepang" to "kualalumpur",
+        "malaysia" to "kualalumpur",
         "madring" to "madring",
         "madrid" to "madring",
         "imola" to "imola",
@@ -239,6 +252,7 @@ object CircuitMaps {
         "lusail" to 16,
         "yasmarinacircuit" to 16,
         "imola" to 19,
+        "kualalumpur" to 15,
     )
 
     /** Cache key for a resolved map URL. */

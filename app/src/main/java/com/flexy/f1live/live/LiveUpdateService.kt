@@ -451,7 +451,7 @@ class LiveUpdateService : Service() {
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setColor(content.accentColor)
             .setShowWhen(false)
-            .addAction(stopAction())
+            .addAction(stopAction(content.accentColor))
         contentIntent()?.let { builder.setContentIntent(it) }
 
         if (Build.VERSION.SDK_INT >= AppSettings.API_METRIC_STYLE && useMetricStyle(content)) {
@@ -579,7 +579,7 @@ class LiveUpdateService : Service() {
 
     private fun connectingText(): String = getString(R.string.live_notif_connecting)
 
-    private fun stopAction(): Notification.Action {
+    private fun stopAction(accent: Int): Notification.Action {
         val intent = Intent(this, LiveUpdateService::class.java).setAction(ACTION_STOP)
         val pending = PendingIntent.getService(
             this,
@@ -588,10 +588,11 @@ class LiveUpdateService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         // setColor() no longer tints anything in a non-colorized notification (the system themes
-        // it with the wallpaper colours), and colorizing would cost the promotion - so the F1 red
-        // accent goes into the label itself as a colour span, which survives into the system UI.
+        // it with the wallpaper colours), and colorizing would cost the promotion - so the accent
+        // (the leader's team colour) goes into the label itself as a colour span, which survives
+        // into the system UI.
         val label = SpannableString(getString(R.string.live_notif_stop)).apply {
-            setSpan(ForegroundColorSpan(LiveNotificationBuilder.COLOR_FALLBACK), 0, length, 0)
+            setSpan(ForegroundColorSpan(accent), 0, length, 0)
         }
         return Notification.Action.Builder(
             Icon.createWithResource(this, R.drawable.ic_stat_f1),

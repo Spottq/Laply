@@ -39,7 +39,7 @@ object LiveNotificationBuilder {
     /** Title suffix once the session is over (see [isFinished]); takes the flag's place. */
     const val FINISHED_LABEL = "FINISHED"
 
-    /** F1 red: the Live Update accent, and the fallback wherever a team colour is unknown. */
+    /** F1 red: the app's brand colour, and the fallback wherever a team colour is unknown. */
     const val COLOR_FALLBACK = 0xFFE10600.toInt()
 
     /** Progress bar description, resolved into a `Notification.ProgressStyle` by the service. */
@@ -255,11 +255,11 @@ object LiveNotificationBuilder {
     }
 
     /**
-     * The notification's accent is always F1 red: the brand, and the same whoever leads. The
-     * leader's team colour still lives on in the tracker avatar (see [AvatarIcons]).
+     * The notification's accent follows the leader: their team colour, so a change at the front
+     * repaints the notification. F1 red until the feed names a leader with a known team colour.
      */
-    @Suppress("UNUSED_PARAMETER")
-    fun accentColor(state: LiveSessionState): Int = COLOR_FALLBACK
+    fun accentColor(state: LiveSessionState): Int =
+        parseTeamColor(state.drivers.firstOrNull()?.teamColorHex) ?: COLOR_FALLBACK
 
     /** "F47600" / "#F47600" -> 0xFFF47600; null on anything unexpected. */
     fun parseTeamColor(hex: String?): Int? {

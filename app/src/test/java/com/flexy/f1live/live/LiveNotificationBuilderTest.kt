@@ -81,6 +81,20 @@ class LiveNotificationBuilderTest {
     }
 
     @Test
+    fun `the accent is the leader's team colour, F1 red when unknown`() {
+        val papaya = race.copy(
+            drivers = listOf(
+                race.drivers[2].copy(position = 1, teamColorHex = "F47600"),
+                race.drivers[0].copy(position = 2, teamColorHex = "00D2BE"),
+            ),
+        )
+        assertEquals(0xFFF47600.toInt(), LiveNotificationBuilder.accentColor(papaya))
+        assertEquals(0xFFF47600.toInt(), LiveNotificationBuilder.build(papaya, "").accentColor)
+        assertEquals(LiveNotificationBuilder.COLOR_FALLBACK, LiveNotificationBuilder.accentColor(race))
+        assertEquals(LiveNotificationBuilder.COLOR_FALLBACK, LiveNotificationBuilder.accentColor(LiveSessionState.EMPTY))
+    }
+
+    @Test
     fun `the chip shows the lap and the leader`() {
         assertEquals("L4 · RUS", LiveNotificationBuilder.shortCriticalText(race))
         assertEquals("L53 · RUS", LiveNotificationBuilder.shortCriticalText(race.copy(currentLap = 53)))

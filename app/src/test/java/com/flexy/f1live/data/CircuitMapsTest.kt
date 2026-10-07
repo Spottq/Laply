@@ -136,7 +136,22 @@ class CircuitMapsTest {
         )
         val yas = weekend(country = "UAE", circuit = "Yas Marina Circuit")
         assertEquals("yasmarinacircuit", CircuitMaps.outlineSlug(yas))
-        assertNull(CircuitMaps.f1OutlineUrl(weekend(country = "Malaysia", circuit = "Sepang International Circuit")))
+        assertNull(CircuitMaps.f1OutlineUrl(weekend(country = "Neverland")))
+    }
+
+    @Test
+    fun `Sepang uses F1's Kuala Lumpur drawing, which only exists from 2026`() {
+        val sepang = weekend(country = "Malaysia", locality = "Kuala Lumpur", circuit = "Sepang International Circuit")
+        assertEquals("kualalumpur", CircuitMaps.outlineSlug(sepang))
+        assertEquals(
+            "https://media.formula1.com/image/upload/f_png,w_640/common/f1/2026/track/2026trackkualalumpur.png",
+            CircuitMaps.f1OutlineUrl(sepang.copy(season = 2017)),
+        )
+        assertEquals(
+            "https://media.formula1.com/image/upload/f_png,w_1200/common/f1/2026/track/2026trackkualalumpurdetailed.png",
+            CircuitMaps.f1DetailedMapUrl(sepang.copy(season = 2025)),
+        )
+        assertEquals(15, CircuitMaps.turnsOf(sepang))
     }
 
     @Test
@@ -155,7 +170,7 @@ class CircuitMapsTest {
             "https://media.formula1.com/image/upload/f_png,w_1200/common/f1/2026/track/2026trackbakudetailed.png",
             CircuitMaps.f1DetailedMapUrl(baku.copy(season = 2027)),
         )
-        assertNull(CircuitMaps.f1DetailedMapUrl(weekend(country = "Malaysia", circuit = "Sepang International Circuit")))
+        assertNull(CircuitMaps.f1DetailedMapUrl(weekend(country = "Neverland")))
     }
 
     @Test
@@ -170,7 +185,6 @@ class CircuitMapsTest {
         assertEquals(20, CircuitMaps.turnsOf(weekend(country = "USA", locality = "Austin", circuit = "Circuit of the Americas")))
         assertEquals(17, CircuitMaps.turnsOf(weekend(country = "USA", locality = "Las Vegas", circuit = "Las Vegas Strip Circuit")))
         // No outline, no count: never a guess.
-        assertNull(CircuitMaps.turnsOf(weekend(country = "Malaysia", circuit = "Sepang International Circuit")))
         assertNull(CircuitMaps.turnsOf(weekend(country = "Neverland")))
     }
 
