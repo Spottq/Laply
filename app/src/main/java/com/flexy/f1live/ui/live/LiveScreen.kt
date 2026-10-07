@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -328,15 +329,17 @@ private fun LiveTwoPanes(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             headerSection(state, isRace, isFollowing, onToggleFollow, inPane = true)
-            // While a session runs the circuit is what matters; between sessions, what comes next.
+            // While a session runs the circuit and conditions are what matter, and the next round
+            // waits at the bottom; between sessions, what comes next leads.
             if (state.isLive) {
                 circuitSection(state, circuit)
+                conditionsSection(state)
                 nextRoundSection(nextSession, onOpenSchedule, Modifier, compact = compact)
             } else {
                 nextRoundSection(nextSession, onOpenSchedule, Modifier, compact = compact)
                 circuitSection(state, circuit)
+                conditionsSection(state)
             }
-            conditionsSection(state)
         }
         LazyColumn(
             modifier = Modifier.weight(1f - panes.leftFraction).fillMaxHeight(),
@@ -479,10 +482,12 @@ private fun LazyListScope.circuitSection(state: LiveSessionState, circuit: Circu
     }
 }
 
-/** Two-pane layout only: track status, humidity and rain, whichever the feed reports. */
+/** Two-pane layout only: temperatures, track status, humidity and rain, whichever are reported. */
 private fun LazyListScope.conditionsSection(state: LiveSessionState) {
     val showFlag = state.isLive && state.trackFlag != TrackFlag.UNKNOWN
-    if (!showFlag && state.humidityPct == null && state.rainfall == null) return
+    val hasAny = showFlag || state.airTempC != null || state.trackTempC != null ||
+        state.humidityPct != null || state.rainfall != null
+    if (!hasAny) return
     item(key = "conditions", contentType = "conditions") {
         ConditionsCard(state = state, showFlag = showFlag)
     }
@@ -519,15 +524,10 @@ private fun LiveHeader(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Phone: keeps the height the share button used to give it, so the headline stays put
-            // whether or not the feed reports temperatures. Pane: the row only exists when there are
-            // temperatures, so the headline starts level with the card in the other pane.
-            val hasWeather = state.airTempC != null || state.trackTempC != null
-            if (!inPane || hasWeather) Row(
-                modifier = if (inPane) {
-                    Modifier.fillMaxWidth()
-                } else {
-                    Modifier.fillMaxWidth().padding(top = 8.dp).heightIn(min = 48.dp)
-                },
+            // whether or not the feed reports temperatures. Pane: the temperatures live in the
+            // Conditions card further down, so the headline starts level with the other pane.
+            if (!inPane) Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp).heightIn(min = 48.dp),
                 verticalAlignment = Alignment.Top,
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -544,7 +544,7 @@ private fun LiveHeader(
                 }
             }
 
-            if (!inPane || hasWeather) Spacer(Modifier.height(12.dp))
+            if (!inPane) Spacer(Modifier.height(12.dp))
             Text(
                 text = "Formula 1" + state.meetingCountry.takeIf { it.isNotBlank() }
                     ?.let { " · $it" }.orEmpty(),
@@ -843,19 +843,37 @@ private fun SectionLabel(text: String) {
     )
 }
 
-/** Track status (live only), humidity and rain; the temperatures already sit in the header. */
+/**
+ * Air and track temperature, track status (live only), humidity and rain. Wraps onto a second line
+ * in a narrow pane rather than squeezing the chips.
+ */
 @Composable
 private fun ConditionsCard(state: LiveSessionState, showFlag: Boolean) {
     Column {
         SectionLabel(stringResource(R.string.conditions))
-        Row(
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainer)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            state.airTempC?.let { air ->
+                InfoChip(
+                    icon = Icons.Filled.Thermostat,
+                    value = air.toInt().toString() + "°C",
+                    caption = stringResource(R.string.air_temp),
+                )
+            }
+            state.trackTempC?.let { track ->
+                InfoChip(
+                    icon = Icons.Filled.DeviceThermostat,
+                    value = track.toInt().toString() + "°C",
+                    caption = stringResource(R.string.track_temp),
+                )
+            }
             if (showFlag) {
                 InfoChip(
                     icon = Icons.Filled.Flag,
