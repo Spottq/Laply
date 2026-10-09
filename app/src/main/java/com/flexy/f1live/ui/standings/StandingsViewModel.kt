@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.flexy.f1live.data.ConstructorStanding
 import com.flexy.f1live.data.DriverStanding
+import com.flexy.f1live.data.Graph
 import com.flexy.f1live.data.JolpicaStandingsRepository
 import com.flexy.f1live.data.Standings
+import com.flexy.f1live.data.TitleFight
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,8 +28,16 @@ data class StandingsUiState(
     /** True while the table on screen came from disk and the network has not confirmed it. */
     val fromCache: Boolean = false,
     val error: String? = null,
+    /** Null until the calendar is in, or when it does not fit the standings. */
+    val titleFight: TitleFight? = null,
 ) {
     val isEmpty: Boolean get() = drivers.isEmpty() && constructors.isEmpty()
+
+    /**
+     * How many drivers sit above the "out of reach" line, or null for no line: everyone can still
+     * win, or there is no calendar to tell.
+     */
+    val titleCut: Int? get() = titleFight?.contenders?.takeIf { it in 1 until drivers.size }
 
     /** Leader's points, used to size the gap bars. Never zero, so the bars can divide by it. */
     val driverLeaderPoints: Double get() = drivers.firstOrNull()?.points?.takeIf { it > 0 } ?: 1.0
@@ -90,6 +100,20 @@ class StandingsViewModel : ViewModel() {
                     }
                 },
             )
+
+            // After the table, not before it: on a first launch the calendar may need the network
+            // too, and the standings should not wait for it.
+            val weekends = Graph.schedule.getSeason(season).getOrNull().orEmpty()
+            _uiState.update {
+                it.copy(
+                    titleFight = TitleFight.of(
+                        drivers = it.drivers,
+                        afterRound = it.round,
+                        weekends = weekends,
+                        nowUtcMillis = System.currentTimeMillis(),
+                    ),
+                )
+            }
         }
     }
 
