@@ -11,25 +11,12 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/*
- * Large-screen support: M3 window width classes, measured on the space the screen actually gets
- * (so split screen and free-form windows count too, and previews with a device spec just work).
- */
-
-/** Start of the MEDIUM width class (unfolded foldables, small tablets, landscape phones). */
 val MediumWidthBreakpoint = 600.dp
 
-/** Start of the EXPANDED width class (tablets in landscape). */
 val ExpandedWidthBreakpoint = 840.dp
 
-/** The widest a single column of cards gets on a large screen; beyond it the column is centred. */
 val MaxColumnWidth = 720.dp
 
-/**
- * Hands [content] the horizontal gutter that centres a column of at most [maxContentWidth] in the
- * available width: zero on phones. Lists add it to their contentPadding (see [plusHorizontal]), so
- * they still scroll from anywhere across the screen, not only over the centred column.
- */
 @Composable
 fun CenteredColumn(
     modifier: Modifier = Modifier,
@@ -46,7 +33,6 @@ fun CenteredColumn(
     }
 }
 
-/** This padding with [extra] added on both horizontal sides. */
 @Composable
 fun PaddingValues.plusHorizontal(extra: Dp): PaddingValues {
     if (extra <= 0.dp) return this

@@ -1,15 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Samsung One UI lock-screen widget, 2x2 (tablets / foldables; widget/lock/SamsungLockWidgetLarge.kt).
-    Like the 2x1 (widget_lock_2x1.xml): transparent root, no background, plain white text in the
-    "sec" font; the host recolours TextViews to suit the wallpaper and AOD, so no colour is set
-    from code. Top to bottom: "NEXT ROUND · R16", "Italian GP", "FP3 · Sat 12:30", the big
-    "in 1d 13h" / "LIVE", then up to two later sessions (hidden from code when they do not fit).
-    Behind the text, when the "Circuit background" setting is on: the weekend's circuit outline as
-    a faint white bitmap, pinned to the bottom end. Also the picker preview, hence the sample text.
-    Size/slot declarations follow the user's LockWidgets project (res/xml/lock_widget_2x2_info.xml)
-    and Samsung Notes' 2x2 lock-screen widget.
--->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/lock2_root"
     android:layout_width="match_parent"

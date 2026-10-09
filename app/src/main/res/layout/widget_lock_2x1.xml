@@ -1,14 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Samsung One UI lock-screen widget, 2x1 (widget/lock/SamsungLockWidget.kt). Transparent, no
-    background, plain white text in Samsung's "sec" font like the system lock-screen widgets: the
-    host recolours TextViews to suit the wallpaper and AOD, so no colour is ever set from code.
-    Top line: "FP1 · Azerbaijan GP"; bottom line: "in 1d 12h" / "in 16h 41m" / "LIVE · FP1", in the
-    app's wording. Also the picker preview, hence the sample text.
-    Behind the text, when the "Circuit background" setting is on: the next weekend's circuit
-    outline as a faint white bitmap (bitmaps are not recoloured by the host), pinned to the end.
-    Pattern adapted from twidget (MIT, © 2026 Josh Skinner), res/layout/lockscreen_message_2x1.xml.
--->
+<!-- Adapted from twidget (MIT, © 2026 Josh Skinner). -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/lock_root"
     android:layout_width="match_parent"

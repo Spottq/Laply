@@ -23,22 +23,11 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-/**
- * The race weekend's forecast from Open-Meteo (free, no key): one request per weekend for the
- * circuit's daily outlook and the hour each session starts in, in the circuit's own time zone.
- *
- * `api.open-meteo.com` is blocked on some networks while the project's other hosts are not, and
- * `previous-runs-api.open-meteo.com` answers the same `/v1/forecast` query with the same model
- * data - so it is the fallback, the way ESPN stands in for F1's live timing.
- *
- * Forecasts move slowly; a weekend's answer is kept in memory for [FRESH_MILLIS].
- */
 class WeatherRepository(
     http: OkHttpClient,
     private val hosts: List<String> = DEFAULT_HOSTS,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
-    /** A blocked host times out on connect: give up on it quickly and try the next one. */
     private val client: OkHttpClient = http.newBuilder()
         .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .build()
@@ -46,7 +35,6 @@ class WeatherRepository(
     private val mutex = Mutex()
     private val cache = mutableMapOf<String, Pair<Long, WeekendForecast>>()
 
-    /** The weekend's forecast, or why there is none. Never throws (except cancellation). */
     suspend fun forecast(weekend: RaceWeekend): WeekendWeather {
         val lat = weekend.latitude
         val lon = weekend.longitude
@@ -69,7 +57,6 @@ class WeatherRepository(
         return WeekendWeather.Ready(forecast)
     }
 
-    /** The host that answered last: a blocked primary costs its timeout once, not every time. */
     @Volatile
     private var preferred: String? = null
 
@@ -81,9 +68,7 @@ class WeatherRepository(
                     .also { preferred = host }
             } catch (e: CancellationException) {
                 throw e
-            } catch (_: IOException) {
-                // Blocked, offline or overloaded: the next host, if any.
-            }
+            } catch (_: IOException) {}
         }
         return null
     }
@@ -94,7 +79,6 @@ class WeatherRepository(
             "https://previous-runs-api.open-meteo.com",
         )
 
-        /** Open-Meteo forecasts reach 16 days ahead, today included. */
         private const val FORECAST_DAYS = 16
         private val HORIZON_MILLIS = TimeUnit.DAYS.toMillis(FORECAST_DAYS - 1L)
         private val FRESH_MILLIS = TimeUnit.HOURS.toMillis(1)
@@ -109,20 +93,13 @@ class WeatherRepository(
 
         private fun coordinate(value: Double): String = String.format(Locale.ROOT, "%.4f", value)
 
-        /** The hourly forecast kept around the sessions (see [WeekendForecast.hoursAround]). */
         private val HOURS_KEPT_BEFORE = TimeUnit.HOURS.toMillis(3)
         private val HOURS_KEPT_AFTER = TimeUnit.HOURS.toMillis(4)
 
         private val HOUR: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:00")
 
-        /**
-         * Picks the weekend out of a 16-day answer: the circuit-local days that hold a session, and
-         * the hour each session starts in. Null when the answer reaches none of the weekend's days.
-         */
         internal fun parseWeekendForecast(body: String, weekend: RaceWeekend): WeekendForecast? {
             val dto = LenientJson.decodeFromString<ForecastDto>(body)
-            // The circuit's zone, so an hour after a clock change still lands right; the fixed
-            // offset of the answer when the zone is unknown.
             val zone: ZoneId = dto.timezone?.let { runCatching { ZoneId.of(it) }.getOrNull() }
                 ?: ZoneOffset.ofTotalSeconds(dto.utcOffsetSeconds)
             fun localOf(utcMillis: Long) = Instant.ofEpochMilli(utcMillis).atZone(zone)
@@ -138,7 +115,6 @@ class WeatherRepository(
                 if (date !in weekendDates) return@mapIndexedNotNull null
                 val code = daily?.weatherCode?.getOrNull(i)
                 val max = daily?.tempMax?.getOrNull(i)
-                // The last day of the horizon is often published empty.
                 if (code == null && max == null) return@mapIndexedNotNull null
                 DayForecast(
                     date = date,

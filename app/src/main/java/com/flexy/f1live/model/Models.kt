@@ -3,19 +3,6 @@ package com.flexy.f1live.model
 import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
 
-/**
- * Shared domain contract. Data layer produces these, UI and Live Updates consume them.
- *
- * Every type here is deeply immutable, but several carry `List<>` properties which Compose treats
- * as unstable by default. Under strong skipping an unstable parameter is compared by *instance*
- * identity, so a freshly parsed - yet structurally identical - snapshot would recompose every row.
- * [Immutable] promises deep immutability, which lets Compose compare with `equals` and skip.
- *
- * The live-timing half of the contract is also [Serializable]: finished sessions are written to
- * `filesDir/cache-json/` so the Live tab can paint the last classification before the network
- * answers, and so a past session opened from the schedule costs nothing the second time.
- */
-
 @Serializable
 enum class SessionKind { PRACTICE1, PRACTICE2, PRACTICE3, SPRINT_QUALIFYING, SPRINT, QUALIFYING, RACE, UNKNOWN }
 
@@ -23,8 +10,8 @@ enum class SessionKind { PRACTICE1, PRACTICE2, PRACTICE3, SPRINT_QUALIFYING, SPR
 @Serializable
 data class ScheduledSession(
     val kind: SessionKind,
-    val name: String,            // "Practice 1", "Qualifying", "Race"
-    val startUtcMillis: Long?,   // null if time unknown
+    val name: String,
+    val startUtcMillis: Long?,
 )
 
 @Immutable
@@ -32,16 +19,13 @@ data class ScheduledSession(
 data class RaceWeekend(
     val season: Int,
     val round: Int,
-    val name: String,            // "Italian Grand Prix"
-    val country: String,         // "Italy"
-    val locality: String,        // "Monza"
-    val circuitName: String,     // "Autodromo Nazionale Monza"
-    val countryCode: String?,    // ISO 3166-1 alpha-2, lowercase, e.g. "it"; null if unknown
+    val name: String,
+    val country: String,
+    val locality: String,
+    val circuitName: String,
+    val countryCode: String?,
     val sessions: List<ScheduledSession>,
-    /** Circuit's Wikipedia page, e.g. "https://en.wikipedia.org/wiki/Circuit_Zandvoort"; the
-     *  fallback source for a track map when F1's media CDN has none. */
     val circuitWikiUrl: String? = null,
-    /** Where the circuit is, for the weekend forecast; null in calendars cached before 1.1. */
     val latitude: Double? = null,
     val longitude: Double? = null,
 ) {
@@ -51,17 +35,12 @@ data class RaceWeekend(
 @Serializable
 enum class SessionStatus { INACTIVE, STARTED, ABORTED, FINISHED, FINALISED, ENDS, UNKNOWN }
 
-/** Which feed produced a [LiveSessionState]. */
 @Serializable
 enum class LiveSource {
     NONE,
     F1_LIVE_TIMING,
     ESPN,
-
-    /** Ergast-compatible results from Jolpica: finished races, sprints and qualifying. */
     JOLPICA,
-
-    /** Replayed from `filesDir/cache-json/`, i.e. shown before (or instead of) any network call. */
     CACHE,
 }
 
@@ -71,7 +50,7 @@ enum class TrackFlag { GREEN, YELLOW, SC, RED, VSC, VSC_ENDING, UNKNOWN }
 @Immutable
 @Serializable
 data class SectorTiming(
-    val value: String,           // "37.045" or ""
+    val value: String,
     val personalFastest: Boolean,
     val overallFastest: Boolean,
 )
@@ -79,74 +58,45 @@ data class SectorTiming(
 @Immutable
 @Serializable
 data class DriverTiming(
-    val position: Int,           // 1-based; 0 if unknown
-    val racingNumber: String,    // "1"
-    val tla: String,             // "NOR"
+    val position: Int,
+    val racingNumber: String,
+    val tla: String,
     val firstName: String,
     val lastName: String,
-    val shortName: String,       // "L. Norris"
-    val teamName: String,        // "McLaren"
-    val teamColorHex: String?,   // "F47600" (no #), null if unknown
+    val shortName: String,
+    val teamName: String,
+    val teamColorHex: String?,
     val headshotUrl: String?,
-    val countryCode: String?,    // ISO alpha-2 lowercase, e.g. "gb"; null if unknown
-    val bestLapTime: String,     // "1:22.612" or ""
-    val lastLapTime: String,     // "" if none
-    val gapToLeader: String,     // "+0.019" / "" / "1 LAP"
-    val interval: String,        // gap to car ahead
+    val countryCode: String?,
+    val bestLapTime: String,
+    val lastLapTime: String,
+    val gapToLeader: String,
+    val interval: String,
     val sectors: List<SectorTiming>,
     val inPit: Boolean,
     val pitOut: Boolean,
     val retired: Boolean,
     val stopped: Boolean,
-    val knockedOut: Boolean,     // eliminated in Q1/Q2
+    val knockedOut: Boolean,
     val numberOfLaps: Int,
     val numberOfPitStops: Int,
-    val tyreCompound: String?,   // "SOFT" / "MEDIUM" / "HARD" / "INTERMEDIATE" / "WET" / null
-    /**
-     * True for the one driver holding the fastest lap of the session (`TimingStats.Lines[n].
-     * PersonalBestLapTime.Position == 1`). Sources that publish no lap times leave it false.
-     */
+    val tyreCompound: String?,
     val fastestLap: Boolean = false,
-    /**
-     * The driver's best sector times of the session, which is a different thing from [sectors]:
-     * the feed's `TimingData.Sectors` are the *last* lap, so a finished session would otherwise
-     * show whatever happened on an in-lap. Empty for sources that do not publish them.
-     */
     val bestSectors: List<SectorTiming> = emptyList(),
-    /**
-     * The session's tyre history, oldest stint first, from `TimingAppData.Lines[n].Stints`. Empty
-     * for sources that publish no tyres (ESPN, Jolpica).
-     */
     val stints: List<TyreStint> = emptyList(),
 ) {
-    /**
-     * Pit stops so far: the timing line's own count, or the stint changes for a source without
-     * one. A red-flag tyre change is a new stint but no stop, so the two can differ.
-     */
     val pitStops: Int
         get() = if (numberOfPitStops > 0) numberOfPitStops else (stints.size - 1).coerceAtLeast(0)
 
-    /**
-     * The lap each stint ended on, i.e. the lap of each stop: the laps of the stints before it,
-     * added up. Laps a set carried from an earlier session are not in [TyreStint.laps], so a
-     * used set does not push the count on.
-     */
     val pitStopLaps: List<Int>
         get() = stints.dropLast(1).runningFold(0) { lap, stint -> lap + stint.laps }.drop(1)
 }
 
-/**
- * One stint from `TimingAppData.Lines[n].Stints`: the laps between two visits to the pits on one
- * set of tyres. In practice and qualifying that is a run, and a second run on the same set is a
- * stint of its own with [isNew] false.
- */
 @Immutable
 @Serializable
 data class TyreStint(
-    val compound: String?,       // "SOFT" / "MEDIUM" / "HARD" / "INTERMEDIATE" / "WET" / null
-    /** False for a set that had already been run, earlier in this session or in another one. */
+    val compound: String?,
     val isNew: Boolean,
-    /** Laps driven in this stint, not counting the ones the set already had on it. */
     val laps: Int,
 )
 
@@ -154,22 +104,22 @@ data class TyreStint(
 @Serializable
 data class RaceControlMessage(
     val utcMillis: Long?,
-    val category: String,        // "Flag", "Other", "Drs", "SafetyCar"
+    val category: String,
     val message: String,
-    val flag: String?,           // "YELLOW", "GREEN", "CHEQUERED", ...
+    val flag: String?,
 )
 
 @Immutable
 @Serializable
 data class LiveSessionState(
     val isConnected: Boolean,
-    val meetingName: String,     // "Italian Grand Prix"
-    val meetingCountry: String,  // "Italy"
-    val meetingLocation: String, // "Monza"
+    val meetingName: String,
+    val meetingCountry: String,
+    val meetingLocation: String,
     val circuitShortName: String,
-    val sessionName: String,     // "Qualifying"
+    val sessionName: String,
     val sessionKind: SessionKind,
-    val sessionPart: Int?,       // 1/2/3 for Q1/Q2/Q3, null otherwise
+    val sessionPart: Int?,
     val status: SessionStatus,
     val trackFlag: TrackFlag,
     val airTempC: Double?,
@@ -178,14 +128,10 @@ data class LiveSessionState(
     val rainfall: Boolean?,
     val currentLap: Int?,
     val totalLaps: Int?,
-    val drivers: List<DriverTiming>,   // sorted by position ascending
-    val raceControl: List<RaceControlMessage>, // newest last
+    val drivers: List<DriverTiming>,
+    val raceControl: List<RaceControlMessage>,
     val lastUpdateUtcMillis: Long,
     val source: LiveSource = LiveSource.NONE,
-    /**
-     * The circuit's offset from UTC in minutes (F1's `SessionInfo.GmtOffset`), null when the feed
-     * does not say. Race control writes clock times in track time; this turns them into ours.
-     */
     val trackUtcOffsetMinutes: Int? = null,
 ) {
     companion object {

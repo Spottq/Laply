@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Static picker preview of the drivers' standings widget for launchers before Android 15 (15+ gets one
-     generated from the real widget, widget/standings). Made-up table. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"

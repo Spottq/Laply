@@ -85,7 +85,6 @@ import com.flexy.f1live.update.UpdateChecker
 import com.flexy.f1live.widget.OneUi
 import kotlinx.coroutines.launch
 
-/** Everything the Settings screen shows, so [SettingsContent] stays previewable. */
 data class SettingsUiState(
     val themeMode: ThemeMode,
     val dynamicColor: Boolean,
@@ -98,13 +97,6 @@ data class SettingsUiState(
     val checkingForUpdate: Boolean = false,
 )
 
-/**
- * App settings. A detail screen like the session results: it owns a back arrow and the floating
- * toolbar stays hidden while it is open.
- *
- * No ViewModel: every value is a process-wide [AppSettings] StateFlow, which already survives
- * configuration changes and is shared with the theme, the Live tab and the Live Update service.
- */
 @Composable
 fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -118,7 +110,6 @@ fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var checking by remember { mutableStateOf(false) }
-    // The very same toggle as the Follow button: permission, alarm and service all included.
     val setAutoLiveUpdate = rememberFollowToggle()
 
     SettingsContent(
@@ -138,15 +129,12 @@ fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         onDynamicColor = { AppSettings.setDynamicColor(context, it) },
         onAutoLiveUpdate = setAutoLiveUpdate,
         onMetricStyle = { AppSettings.setMetricStyle(context, it) },
-        // The demo race is a developer tool: hidden in release builds, kept in debug ones.
         onTestLiveUpdate = if (isDebuggable(context)) {
             { LiveUpdateService.startDemo(context) }
         } else {
             null
         },
-        // AppSettings is observed by WidgetUpdater, which redraws every placed widget.
         onWidgetTrackBackground = { AppSettings.setWidgetTrackBackground(context, it) },
-        // F1App observes the setting and schedules or cancels the daily UpdateCheckWorker.
         onCheckUpdates = { AppSettings.setCheckUpdates(context, it) },
         onCheckNow = {
             if (!checking) {
@@ -227,7 +215,6 @@ fun SettingsContent(
             )
         },
     ) { innerPadding ->
-        // Large screens: one centred column instead of rows stretched edge to edge.
         CenteredColumn { gutter ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -279,7 +266,6 @@ fun SettingsContent(
                                     R.string.settings_metric_style_unsupported
                                 },
                             ),
-                            // Below Android 17 the switch cannot do anything: shown off and disabled.
                             checked = state.metricStyle && state.metricStyleSupported,
                             enabled = state.metricStyleSupported,
                             onCheckedChange = onMetricStyle,
@@ -297,8 +283,6 @@ fun SettingsContent(
                     }
                 }
                 item(key = "widgets") {
-                    // The One UI glass options live in the widget's own settings (its long-press
-                    // "Settings" / "Customize"): One UI passes widgets no transparency of its own.
                     WidgetSettingsGroup(
                         trackBackground = state.widgetTrackBackground,
                         oneUiBlurSupported = false,
@@ -354,11 +338,6 @@ fun SettingsContent(
     }
 }
 
-/**
- * The widget appearance options. The widget's own settings screen (WidgetConfigActivity, from
- * its long-press menu) shows them all: circuit background, and on One UI 7+ the blur style with
- * its opacity and tone. Settings > Widgets shows only the circuit background.
- */
 @Composable
 internal fun WidgetSettingsGroup(
     trackBackground: Boolean,
@@ -371,8 +350,6 @@ internal fun WidgetSettingsGroup(
     onBlurAlpha: (Int) -> Unit,
     onTone: (ThemeMode) -> Unit,
 ) {
-    // The One UI rows only exist on One UI 7+; opacity and tone only mean something
-    // while the blur is on.
     val oneUi = oneUiBlurSupported
     val glassRows = oneUi && samsungBlur
     val count = 1 + (if (oneUi) 1 else 0) + (if (glassRows) 2 else 0)
@@ -431,7 +408,6 @@ internal fun WidgetSettingsGroup(
     }
 }
 
-/** [WidgetSettingsGroup] bound to [AppSettings]: every change redraws the placed widgets. */
 @Composable
 internal fun WidgetSettingsGroup() {
     val context = LocalContext.current
@@ -455,10 +431,6 @@ internal fun WidgetSettingsGroup() {
 
 // ---------------------------------------------------------------- building blocks
 
-/**
- * A titled group of items drawn as one Expressive segmented list: rounded outer corners, tight
- * inner corners and a hairline gap between the items.
- */
 @Composable
 private fun SettingsGroup(@StringRes title: Int, content: @Composable ColumnScope.() -> Unit) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -476,11 +448,6 @@ private fun SettingsGroup(@StringRes title: Int, content: @Composable ColumnScop
     }
 }
 
-/**
- * A setting that is a plain on/off. The whole row toggles; the switch only mirrors the state
- * (`onCheckedChange = null`), so there is one touch target and one ripple, and the row carries
- * the switch semantics for TalkBack.
- */
 @Composable
 private fun SwitchItem(
     index: Int,
@@ -507,7 +474,6 @@ private fun SwitchItem(
     )
 }
 
-/** A row that does something once when tapped. */
 @Composable
 private fun ActionItem(
     index: Int,
@@ -528,14 +494,12 @@ private fun ActionItem(
     )
 }
 
-/** A read-only row: label on the left, value in the supporting line. */
 @Composable
 private fun InfoItem(index: Int, count: Int, icon: ImageVector, title: String, value: String) {
     SegmentedListItem(
         onClick = {},
         enabled = false,
         shapes = ListItemDefaults.segmentedShapes(index, count),
-        // Disabled only to drop the ripple; keep the enabled colours so it does not look greyed.
         colors = ListItemDefaults.segmentedColors().let { colors ->
             ListItemDefaults.segmentedColors(
                 disabledContainerColor = colors.containerColor,
@@ -550,10 +514,6 @@ private fun InfoItem(index: Int, count: Int, icon: ImageVector, title: String, v
     )
 }
 
-/**
- * System / Light / Dark as an Expressive connected button group inside a list-shaped card, so it
- * reads as one item of the Appearance group.
- */
 @Composable
 private fun ThemePicker(
     selected: ThemeMode,
@@ -615,10 +575,6 @@ private fun ThemePicker(
     }
 }
 
-/**
- * A setting with a few exclusive options, drawn like [ThemePicker]: an Expressive connected
- * button group inside a list-shaped card. [options] are labels with an optional icon.
- */
 @Composable
 private fun ChoiceItem(
     index: Int,

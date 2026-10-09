@@ -11,17 +11,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * The standings widgets show as many rows as their height holds, never a title line that says
- * nothing, and fetch the table again only around races and sprints - plus once a day.
- */
 class StandingsWidgetPlannerTest {
 
     private val minute = 60_000L
     private val hour = StandingsWidgetPlanner.HOUR_MS
     private val day = StandingsWidgetPlanner.DAY_MS
 
-    /** The start of the first race below. */
     private val start = 1_790_000_000_000L
 
     private fun weekend(round: Int, vararg sessions: ScheduledSession) = RaceWeekend(
@@ -35,7 +30,6 @@ class StandingsWidgetPlannerTest {
         sessions = sessions.toList(),
     )
 
-    /** A race, then a sprint weekend a week later: the last two rounds of the season. */
     private val calendar = listOf(
         weekend(
             23,
@@ -50,7 +44,6 @@ class StandingsWidgetPlannerTest {
         ),
     )
 
-    /** A race takes two hours, a sprint one, as the session widget times them. */
     private val raceEnd = start + 2 * hour
     private val sprintEnd = start + 6 * day + hour
     private val finalEnd = start + 7 * day + 2 * hour
@@ -145,9 +138,7 @@ class StandingsWidgetPlannerTest {
 
     @Test
     fun `the line goes after the last contender when a row fits under it`() {
-        // 200 dp: ten 20 dp rows, or nine of them and a 16 dp line.
         assertEquals(TablePlan(rows = 9, lineAfter = 3), tablePlan(200f, 20f, 16f, entries = 20, contenders = 3))
-        // Only the leader is left: the line goes right under them.
         assertEquals(TablePlan(rows = 9, lineAfter = 1), tablePlan(200f, 20f, 16f, entries = 20, contenders = 1))
     }
 
@@ -159,8 +150,6 @@ class StandingsWidgetPlannerTest {
 
     @Test
     fun `a line with no row under it is left out, and so is the row it would cost`() {
-        // Five rows fit, or four and the line: the line would close the table and the fifth row,
-        // out of the fight, would show without it. Four contenders and no line, then.
         assertEquals(TablePlan(rows = 4, lineAfter = null), tablePlan(100f, 20f, 16f, entries = 20, contenders = 4))
     }
 
@@ -172,11 +161,8 @@ class StandingsWidgetPlannerTest {
 
     @Test
     fun `rows stop at the end of the table and at the cap`() {
-        // A short table: every row and the line.
         assertEquals(TablePlan(rows = 10, lineAfter = 1), tablePlan(400f, 20f, 16f, entries = 10, contenders = 1))
-        // A very tall widget: twenty rows at most.
         assertEquals(TablePlan(rows = 20, lineAfter = null), tablePlan(1000f, 20f, 16f, entries = 22, contenders = null))
-        // The title fight's tiles have a cap of their own.
         assertEquals(TablePlan(rows = 8, lineAfter = 2), tablePlan(1000f, 20f, 16f, entries = 21, contenders = 2, maxRows = 8))
     }
 
@@ -197,7 +183,6 @@ class StandingsWidgetPlannerTest {
     @Test
     fun `a table never fetched, or fetched in the future, is due`() {
         assertTrue(StandingsWidgetPlanner.isDue(0L, calendar, start))
-        // The clock was set back past the fetch.
         assertTrue(StandingsWidgetPlanner.isDue(start + hour, calendar, start))
     }
 
@@ -221,28 +206,21 @@ class StandingsWidgetPlannerTest {
 
     @Test
     fun `the next check is the next one after a race or a day after the fetch`() {
-        // Fetched after the first check: the one three hours after the race.
         val fetched = raceEnd + hour + 5 * minute
         assertEquals(raceEnd + 3 * hour, StandingsWidgetPlanner.nextCheckAt(fetched, calendar, fetched))
-        // Midweek: a day later.
         val midweek = start + 3 * day
         assertEquals(midweek + day, StandingsWidgetPlanner.nextCheckAt(midweek, calendar, midweek + hour))
-        // The evening before the sprint: an hour after the sprint, ahead of the daily check.
         val friday = start + 5 * day + 12 * hour
         assertEquals(sprintEnd + hour, StandingsWidgetPlanner.nextCheckAt(friday, calendar, friday))
-        // After the season: daily, and so the off-season widget keeps up with the new calendar.
         val december = finalEnd + 25 * hour
         assertEquals(december + day, StandingsWidgetPlanner.nextCheckAt(december, calendar, december))
     }
 
     @Test
     fun `checks are never closer than half an hour`() {
-        // Never fetched (offline from the start).
         assertEquals(start + 30 * minute, StandingsWidgetPlanner.nextCheckAt(0L, calendar, start))
-        // The hour after the race is ten minutes away.
         val now = raceEnd + 50 * minute
         assertEquals(now + 30 * minute, StandingsWidgetPlanner.nextCheckAt(now, calendar, now))
-        // A fetch that keeps failing: the stored table is old and the checks are overdue.
         val stale = start - day - hour
         val later = raceEnd + 5 * hour
         assertEquals(later + 30 * minute, StandingsWidgetPlanner.nextCheckAt(stale, calendar, later))

@@ -11,7 +11,6 @@ import com.flexy.f1live.model.SessionStatus
 import com.flexy.f1live.model.TrackFlag
 import com.flexy.f1live.model.TyreStint
 
-/** Hardcoded fixtures for @Preview only. Values mirror docs/subscribe_snapshot.json. */
 object SampleData {
 
     private fun headshot(reference: String, first: String, last: String): String {

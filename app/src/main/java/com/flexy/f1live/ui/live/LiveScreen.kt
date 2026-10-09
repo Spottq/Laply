@@ -130,12 +130,10 @@ fun LiveScreen(
         onDispose { viewModel.onScreenGone() }
     }
 
-    // A session that just ended was the "next" one when the screen opened: pick a fresh one.
     LaunchedEffect(state.isLive) {
         if (!state.isLive) viewModel.refreshNextSessionIfStale()
     }
 
-    // Same toggle as the Settings switch: permission first, then the opt-in.
     val setFollowing = rememberFollowToggle()
 
     LiveContent(
@@ -156,16 +154,10 @@ fun LiveScreen(
 
 // ---------------------------------------------------------------- stateless content
 
-/**
- * Margins, the space between the panes and the left pane's share of the width - M3's canonical
- * "supporting pane" spacing for the window's width class.
- */
 private class PaneSpec(val margin: Dp, val gutter: Dp, val leftFraction: Float)
 
-/** 600-840dp: an unfolded foldable (the Fold7 inner screen is ~750dp), small tablets. */
 private val MediumPanes = PaneSpec(margin = 16.dp, gutter = 16.dp, leftFraction = 0.43f)
 
-/** 840dp and up: tablets in landscape. */
 private val ExpandedPanes = PaneSpec(margin = 24.dp, gutter = 24.dp, leftFraction = 0.45f)
 
 @Composable
@@ -179,11 +171,8 @@ fun LiveContent(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
     onOpenSchedule: (() -> Unit)? = null,
-    /** Opens the full race control log; null hides the button. */
     onOpenRaceControl: (() -> Unit)? = null,
-    /** Outline of the meeting's circuit; only the two-pane layout shows it. */
     circuit: CircuitOutline? = null,
-    /** Forecast of the weekend coming up, for the next-round card. */
     nextWeather: WeekendWeather = WeekendWeather.Loading,
 ) {
     val isRace = state.sessionKind == SessionKind.RACE || state.sessionKind == SessionKind.SPRINT
@@ -192,11 +181,7 @@ fun LiveContent(
         expandedNumber = if (expandedNumber == number) null else number
     }
 
-    // The width the screen actually gets (split screen and free-form windows included) picks the
-    // layout: one column on phones, the header and the classification side by side from 600dp.
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        // One chequered backdrop for the whole screen, fixed while the lists scroll over it; the
-        // cards keep their own surfaces on top. Its own layer, so a scroll only replays it.
         CheckeredBackground(
             modifier = Modifier.fillMaxSize().graphicsLayer(),
             fullScreen = true,
@@ -244,7 +229,6 @@ fun LiveContent(
     }
 }
 
-/** Phones: header, next round, classification and race control in one list. */
 @Composable
 private fun LiveSingleColumn(
     state: LiveSessionState,
@@ -263,12 +247,9 @@ private fun LiveSingleColumn(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        // Only the bottom inset: the checkered header draws full-bleed behind the status bar
-        // and pads its own content with the top inset instead.
         contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding()),
     ) {
         headerSection(state, isRace, isFollowing, onToggleFollow, inPane = false)
-        // Between sessions the next round leads; while one runs it waits at the very bottom.
         val nextRoundLast = state.isLive
         if (!nextRoundLast) {
             nextRoundSection(
@@ -304,12 +285,6 @@ private fun LiveSingleColumn(
     }
 }
 
-/**
- * Tablets and unfolded foldables: the header, the circuit, the conditions and race control on the
- * left; the classification with the next round under it on the right. Each pane scrolls on its
- * own, so the header and the latest race control messages stay in view however long the
- * classification is.
- */
 @Composable
 private fun LiveTwoPanes(
     panes: PaneSpec,
@@ -329,8 +304,6 @@ private fun LiveTwoPanes(
     contentPadding: PaddingValues,
 ) {
     val direction = LocalLayoutDirection.current
-    // Both panes start below the status bar (the screen's edge fade dissolves them under it) and
-    // end above the floating toolbar; the side insets only matter with a side navigation bar.
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp
     val bottom = contentPadding.calculateBottomPadding() + 24.dp
     Row(modifier = Modifier.fillMaxSize()) {
@@ -367,7 +340,6 @@ private fun LiveTwoPanes(
                 onRetry = onRetry,
                 horizontal = 0.dp,
             )
-            // The weekend coming up closes the right pane, under the drivers.
             nextRoundSection(
                 nextSession = nextSession,
                 weather = nextWeather,
@@ -380,7 +352,6 @@ private fun LiveTwoPanes(
 
 // ---------------------------------------------------------------- sections
 
-/** The checkered header: weather, headline, podium and the Follow call to action. */
 private fun LazyListScope.headerSection(
     state: LiveSessionState,
     isRace: Boolean,
@@ -400,10 +371,6 @@ private fun LazyListScope.headerSection(
     }
 }
 
-/**
- * The weekend coming up, with its forecast. Callers place it: above the classification
- * between sessions, at the bottom (phone) or below the circuit (tablet) while one runs.
- */
 private fun LazyListScope.nextRoundSection(
     nextSession: UpcomingSession?,
     weather: WeekendWeather,
@@ -423,7 +390,6 @@ private fun LazyListScope.nextRoundSection(
     }
 }
 
-/** The classification card, or the empty state when there is nothing to classify. */
 private fun LazyListScope.classificationSection(
     state: LiveSessionState,
     isRace: Boolean,
@@ -449,24 +415,16 @@ private fun LazyListScope.classificationSection(
     items(
         items = state.drivers,
         key = { it.racingNumber },
-        // One content type for every row lets the lazy layout reuse a retired row's
-        // subcomposition instead of building a fresh one on each fling.
         contentType = { "driver" },
     ) { driver ->
         DriverRow(
             driver = driver,
             isRace = isRace,
-            // Only in races: elsewhere the tower is sorted by best lap, so the badge would
-            // sit on P1 and say nothing.
             fastestLap = isRace && driver.fastestLap,
             expanded = expandedNumber == driver.racingNumber,
             onClick = { onToggleRow(driver.racingNumber) },
-            // Placement animations only earn their per-item cost while positions actually
-            // move; a finished session's classification is static.
             modifier = if (state.isLive) Modifier.animateItem() else Modifier,
             showPit = state.isLive,
-            // A finished classification shows the best sectors of the session; while the
-            // session runs the last lap is the interesting one.
             useBestSectors = !state.isLive,
             horizontalPadding = horizontal,
         )
@@ -487,7 +445,6 @@ private fun LazyListScope.raceControlSection(
     }
 }
 
-/** Two-pane layout only: the circuit of the meeting on screen, when the calendar knows it. */
 private fun LazyListScope.circuitSection(state: LiveSessionState, circuit: CircuitOutline?) {
     if (circuit == null || circuit.isEmpty) return
     item(key = "circuit", contentType = "circuit") {
@@ -502,7 +459,6 @@ private fun LazyListScope.circuitSection(state: LiveSessionState, circuit: Circu
     }
 }
 
-/** Two-pane layout only: temperatures, track status, humidity and rain, whichever are reported. */
 private fun LazyListScope.conditionsSection(state: LiveSessionState) {
     val showFlag = state.isLive && state.trackFlag != TrackFlag.UNKNOWN
     val hasAny = showFlag || state.airTempC != null || state.trackTempC != null ||
@@ -522,14 +478,8 @@ private fun LiveHeader(
     isFollowing: Boolean,
     hasData: Boolean,
     onToggleFollow: () -> Unit,
-    /**
-     * Inside a large-screen pane, which already starts below the status bar; on a phone the header
-     * is the first thing under it and pads itself with the inset.
-     */
     inPane: Boolean = false,
 ) {
-    // Transparent over the screen's chequered backdrop (see LiveContent); only the podium sits on
-    // a plate of its own.
     Box(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -537,15 +487,10 @@ private fun LiveHeader(
                 .then(
                     if (inPane) Modifier else Modifier.windowInsetsPadding(WindowInsets.statusBars),
                 )
-                // A pane already brings its margins; the header text starts a little below the
-                // top of the classification card beside it.
                 .padding(horizontal = if (inPane) 0.dp else CardHorizontal)
                 .padding(top = if (inPane) 20.dp else 0.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Phone: keeps the height the share button used to give it, so the headline stays put
-            // whether or not the feed reports temperatures. Pane: the temperatures live in the
-            // Conditions card further down, so the headline starts level with the other pane.
             if (!inPane) Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp).heightIn(min = 48.dp),
                 verticalAlignment = Alignment.Top,
@@ -590,8 +535,6 @@ private fun LiveHeader(
             val sessionOver = state.status == SessionStatus.FINISHED ||
                 state.status == SessionStatus.FINALISED ||
                 state.status == SessionStatus.ENDS
-            // Follow is a one-way call to action: once the persistent opt-in ("auto-follow
-            // sessions") is on, the button folds away. Turning it off lives in Settings.
             AnimatedVisibility(
                 visible = !isFollowing,
                 enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
@@ -621,10 +564,6 @@ private fun LiveHeader(
     }
 }
 
-/**
- * "SQ2 delayed" under the headline while race control holds the session up - between qualifying
- * parts, before a delayed start, or ahead of a red-flag restart - with its own wording below.
- */
 @Composable
 private fun DelayNotice(state: LiveSessionState) {
     val label = SessionBreak.delayLabel(state) ?: return
@@ -670,8 +609,6 @@ private fun headlineFor(state: LiveSessionState, isRace: Boolean, hasData: Boole
     if (isRace) {
         val lap = state.currentLap
         val total = state.totalLaps
-        // ESPN's lap counter is the lap being run, so a finished race reads one past the
-        // distance ("Lap 57/56"); the leader can never be further than the flag.
         if (lap != null && total != null) parts += "Lap ${lap.coerceAtMost(total)}/$total"
         else if (lap != null) parts += "Lap $lap"
     } else {
@@ -711,17 +648,10 @@ private fun WeatherChip(
     }
 }
 
-/** Horizontal breathing room inside each podium column, so neighbouring names never touch. */
 private val PodiumColumnPadding = 4.dp
 
-/** The podium names never go below this; past it they ellipsize. */
 private const val PodiumMinNameSp = 11f
 
-/**
- * The top three as three equal columns: the same avatar size and centre line, and one shared name
- * size - the largest at which all three names fit their column - so no column ends up smaller or
- * taller than its neighbours however long a name is.
- */
 @Composable
 private fun TopThreeRow(drivers: List<DriverTiming>, isRace: Boolean) {
     val baseStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
@@ -741,7 +671,6 @@ private fun TopThreeRow(drivers: List<DriverTiming>, isRace: Boolean) {
                 ).size.width <= columnPx
             }
             while (sizeSp > PodiumMinNameSp && !fits(sizeSp)) sizeSp -= 0.5f
-            // Only the glyphs shrink: the line height stays, so the row never changes height.
             baseStyle.copy(fontSize = sizeSp.sp)
         }
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -778,7 +707,6 @@ private fun TopThreeRow(drivers: List<DriverTiming>, isRace: Boolean) {
                     )
                 }
             }
-            // Fewer than three classified cars: keep the columns at a third each.
             repeat(3 - drivers.size.coerceAtMost(3)) { Spacer(Modifier.weight(1f)) }
         }
     }
@@ -800,8 +728,6 @@ private fun FollowButton(onClick: () -> Unit) {
         Text(stringResource(R.string.follow), fontWeight = FontWeight.SemiBold)
     }
 }
-
-// ---------------------------------------------------------------- classification
 
 // ---------------------------------------------------------------- empty + race control
 
@@ -828,8 +754,6 @@ private fun EmptySessionCard(errorText: String?, onRetry: () -> Unit, horizontal
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        // Only set when F1 and ESPN are both down and there is nothing, not even a cached
-        // session, to show (see CompositeLiveTimingClient); the details are in logcat.
         if (errorText != null) {
             Spacer(Modifier.height(12.dp))
             Text(
@@ -843,7 +767,6 @@ private fun EmptySessionCard(errorText: String?, onRetry: () -> Unit, horizontal
     }
 }
 
-/** The latest [RaceControlPreviewCount] messages; the full log for the session is one tap away. */
 @Composable
 private fun RaceControlSection(
     messages: List<RaceControlMessage>,
@@ -903,10 +826,6 @@ private fun SectionLabel(text: String) {
     )
 }
 
-/**
- * Air and track temperature, track status (live only), humidity and rain. Wraps onto a second line
- * in a narrow pane rather than squeezing the chips.
- */
 @Composable
 private fun ConditionsCard(state: LiveSessionState, showFlag: Boolean) {
     Column {
@@ -970,7 +889,6 @@ private fun trackFlagLabel(flag: TrackFlag): String = when (flag) {
     TrackFlag.UNKNOWN -> "--"
 }
 
-/** Icon, value and caption: the header's weather chip for any value. */
 @Composable
 private fun InfoChip(
     icon: androidx.compose.ui.graphics.vector.ImageVector,

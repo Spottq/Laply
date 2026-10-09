@@ -5,7 +5,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** The constructor -> F1 media slug table, which is nothing like the Ergast id for half the grid. */
 class TeamLogosTest {
 
     @Test

@@ -33,7 +33,6 @@ data class DriverStanding(
     val constructorName: String,
     val constructorId: String,
 ) {
-    /** "L. Norris" — the short form used across the app. */
     val shortName: String
         get() = if (firstName.isNotEmpty()) "${firstName.first()}. $lastName" else lastName
 }
@@ -54,29 +53,11 @@ data class Standings(
     val round: Int,
     val drivers: List<DriverStanding>,
     val constructors: List<ConstructorStanding>,
-    /** When this table came from the network; 0 for one stored before this was recorded. */
     val fetchedAtMillis: Long = 0L,
 )
 
-/**
- * Championship standings from the Jolpica Ergast-compatible API.
- *
- * `GET https://api.jolpi.ca/ergast/f1/{season}/driverStandings.json`
- * `GET https://api.jolpi.ca/ergast/f1/{season}/constructorStandings.json`
- *
- * No auth; the API is rate limited (4 req/s, 500 req/h) so a fetched season stays in memory for
- * the process lifetime and is only re-fetched when `refresh = true` (pull-to-refresh / retry).
- *
- * The screen reads it in two steps: [cached] answers from memory or disk without touching the
- * network - that is what paints the table on a cold, offline start - and [fetch] then refreshes it.
- * When [fetch] fails the cached table stays on screen with an "offline" caption instead of being
- * replaced by an error.
- *
- * Deliberately self-contained: it owns its OkHttp client so it does not depend on the app graph.
- */
 object JolpicaStandingsRepository {
 
-    /** Set once in F1App; null in unit tests, which then simply have no disk layer. */
     @Volatile
     var disk: JsonStore? = null
 
@@ -104,10 +85,8 @@ object JolpicaStandingsRepository {
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
 
-    /** Every table fetched from the network, whoever asked for it: the home-screen widgets follow it. */
     val updates: SharedFlow<Standings> = _updates.asSharedFlow()
 
-    /** Memory, then disk. No network, no failure: null just means "nothing stored yet". */
     suspend fun cached(season: Int): Standings? {
         mutex.withLock { cache[season] }?.let { return it }
         val stored = disk?.read(diskKey(season), Standings.serializer()) ?: return null
@@ -116,7 +95,6 @@ object JolpicaStandingsRepository {
         return stored
     }
 
-    /** Network only; on success both caches are updated. */
     suspend fun fetch(season: Int): Result<Standings> = getStandings(season, refresh = true)
 
     suspend fun getStandings(season: Int, refresh: Boolean = false): Result<Standings> {
@@ -126,7 +104,6 @@ object JolpicaStandingsRepository {
         return runCatching {
             val standings = withContext(Dispatchers.IO) {
                 coroutineScope {
-                    // Both requests are in flight before the first await.
                     val driversAsync = async { fetchDrivers(season) }
                     val constructorsAsync = async { fetchConstructors(season) }
                     val drivers = driversAsync.await()
@@ -271,10 +248,8 @@ object JolpicaStandingsRepository {
 
 // ------------------------------------------------------------- team colours
 
-/** Neutral grey used when a constructor is not in the table (new or historical entrants). */
 private const val FALLBACK_TEAM_HEX = "8A8A8A"
 
-/** Ergast `constructorId` -> the team's livery colour, as a 6-digit hex string (no leading `#`). */
 private val CONSTRUCTOR_COLORS: Map<String, String> = mapOf(
     "mclaren" to "F47600",
     "red_bull" to "3671C6",
@@ -297,7 +272,6 @@ private val CONSTRUCTOR_COLORS: Map<String, String> = mapOf(
     "racing_point" to "F596C8",
 )
 
-/** Team livery colour for an Ergast constructor id; a neutral grey when unknown. */
 fun constructorColorHex(constructorId: String?): String {
     val key = constructorId?.trim()?.lowercase()?.takeIf { it.isNotEmpty() } ?: return FALLBACK_TEAM_HEX
     return CONSTRUCTOR_COLORS[key] ?: FALLBACK_TEAM_HEX
@@ -305,7 +279,6 @@ fun constructorColorHex(constructorId: String?): String {
 
 // ----------------------------------------------------------- nationalities
 
-/** Ergast demonyms ("British") -> ISO 3166-1 alpha-2, lowercase. */
 private val DEMONYM_TO_ALPHA2: Map<String, String> = mapOf(
     "british" to "gb", "english" to "gb", "scottish" to "gb", "welsh" to "gb",
     "dutch" to "nl", "italian" to "it", "french" to "fr", "monegasque" to "mc",
@@ -320,10 +293,6 @@ private val DEMONYM_TO_ALPHA2: Map<String, String> = mapOf(
     "uruguayan" to "uy", "israeli" to "il",
 )
 
-/**
- * Country code for a driver's flag. Prefers the curated TLA table (which knows the current grid)
- * and falls back to the Ergast demonym; null when neither resolves.
- */
 fun driverCountryCode(tla: String?, nationality: String?): String? {
     DriverNationality.forTla(tla)?.let { return it }
     val key = nationality?.trim()?.lowercase()?.takeIf { it.isNotEmpty() } ?: return null

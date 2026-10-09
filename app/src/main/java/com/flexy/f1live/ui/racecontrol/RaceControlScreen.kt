@@ -41,11 +41,6 @@ import com.flexy.f1live.ui.components.RaceControlRow
 import com.flexy.f1live.ui.components.plusHorizontal
 import com.flexy.f1live.ui.theme.F1LivePreviewTheme
 
-/**
- * Every race control message of the session on screen, newest first, opened from the Live tab's
- * race control card. Reads the same shared feed as the Live tab and keeps it connected while it is
- * on screen, so new messages arrive here too.
- */
 @Composable
 fun RaceControlScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     DisposableEffect(Unit) {
@@ -116,7 +111,6 @@ fun RaceControlContent(
             }
             return@Scaffold
         }
-        // Newest first, like the card it was opened from. Reversed once per new message, not per frame.
         val newestFirst = messages.asReversed()
         CenteredColumn { gutter ->
             LazyColumn(
@@ -145,10 +139,6 @@ fun RaceControlContent(
     }
 }
 
-/**
- * Stable across new arrivals: a message's position counted from the *oldest*, so the rows already
- * on screen keep their keys when a new one lands on top.
- */
 private fun keyOf(message: RaceControlMessage, ordinalFromOldest: Int): String =
     ordinalFromOldest.toString() + "|" + (message.utcMillis ?: 0L)
 

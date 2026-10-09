@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-/** F1 brand red. */
 val F1Red = Color(0xFFE10600)
 private val F1RedDim = Color(0xFF8E0400)
 
@@ -42,10 +41,6 @@ internal val F1DarkScheme = darkColorScheme(
     onError = Color(0xFF690005),
 )
 
-/**
- * Light counterpart of [F1DarkScheme], picked in Settings. Same brand red; neutral, very slightly
- * warm surfaces so the timing tower's team colours stay the loudest thing on screen, as in dark.
- */
 internal val F1LightScheme = lightColorScheme(
     primary = Color(0xFFC00500),
     onPrimary = Color.White,
@@ -74,10 +69,6 @@ internal val F1LightScheme = lightColorScheme(
     onError = Color.White,
 )
 
-/**
- * [darkTheme] and [dynamicColor] come from Settings (see MainActivity); the defaults keep the
- * app's original dark F1 look for previews and any caller that does not care.
- */
 @Composable
 fun F1LiveTheme(
     darkTheme: Boolean = true,
@@ -85,7 +76,6 @@ fun F1LiveTheme(
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
-    // minSdk is 31, so Monet is always there; the check only documents where it comes from.
     val dynamic = dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val scheme = when {
         dynamic && darkTheme -> dynamicDarkColorScheme(context)
@@ -96,7 +86,6 @@ fun F1LiveTheme(
     MaterialTheme(colorScheme = scheme, content = content)
 }
 
-/** Theme used by @Preview so previews never depend on a device wallpaper. */
 @Composable
 fun F1LivePreviewTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = F1DarkScheme, content = content)

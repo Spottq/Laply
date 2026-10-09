@@ -1,9 +1,5 @@
 package com.flexy.f1live.data
 
-/**
- * The live feed's DriverList carries no nationality, so driver flags come from this
- * static TLA -> ISO 3166-1 alpha-2 (lowercase) table. Unknown TLAs resolve to null.
- */
 object DriverNationality {
     private val byTla: Map<String, String> = mapOf(
         // 2026 grid

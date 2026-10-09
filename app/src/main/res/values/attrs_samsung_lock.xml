@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Samsung One UI lock-screen / cover-screen widget attributes, read by Samsung's widget host BY
-    NAME from xml/lock_2x1_info.xml and xml/lock_2x1_info_oneui.xml, so names and flag values must
-    stay exactly as they are. widgetStyle and widgetSize are shared with the home-screen widgets and
-    live in values/attrs.xml - do not declare them here too (duplicate attr = resource merge error).
-    Adapted from twidget (MIT, © 2026 Josh Skinner), res/values/attrs.xml.
--->
+<!-- Read by Samsung's host by name: keep names and values. Adapted from twidget (MIT, © 2026 Josh Skinner). -->
 <resources>
     <attr name="allowMultipleSizes" format="boolean" />
 

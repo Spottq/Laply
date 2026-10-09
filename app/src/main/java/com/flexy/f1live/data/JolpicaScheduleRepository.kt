@@ -20,27 +20,10 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeParseException
 
-/**
- * Season schedule from the Jolpica Ergast-compatible API.
- *
- * `GET https://api.jolpi.ca/ergast/f1/{season}.json?limit=100`
- *
- * The API is rate limited (4 req/s, 500 req/h) and a season calendar barely changes, so the result
- * is cached in memory for the process lifetime and only re-fetched when `refresh = true`.
- *
- * It is also mirrored to `filesDir/cache-json/schedule_{season}.json`, which is what the app reads
- * when it starts offline: the calendar is what every other screen keys off (which round a finished
- * session belongs to, which weekend a track map is for), so losing it to a failed request would
- * take the schedule, the results cache and the map cache down with it.
- */
 class JolpicaScheduleRepository(
     private val http: OkHttpClient,
     private val baseUrl: String = DEFAULT_BASE_URL,
     private val disk: JsonStore? = null,
-    /**
-     * Called after a successful network fetch (never for memory or disk hits), so whoever derives
-     * timers from the calendar - the auto-follow alarm - can re-arm them when it actually changed.
-     */
     private val onFetched: ((season: Int, weekends: List<RaceWeekend>) -> Unit)? = null,
 ) : ScheduleRepository {
 
@@ -56,13 +39,8 @@ class JolpicaScheduleRepository(
         if (!refresh) {
             mutex.withLock { cache[season] }?.let { return Result.success(it) }
             readDisk(season)?.let { stored ->
-                // A calendar stored before the circuits had coordinates is fetched once more, so
-                // the weekend forecast has somewhere to look; offline, the stored one still wins.
                 if (stored.all { it.latitude != null }) {
                     mutex.withLock { cache[season] = stored }
-                    // Still refresh in the background? No: a calendar that is already on disk is
-                    // good enough for this launch, and `refresh = true` (pull to refresh) covers
-                    // the rest.
                     return Result.success(stored)
                 }
             }
@@ -74,7 +52,6 @@ class JolpicaScheduleRepository(
             if (weekends.isNotEmpty()) onFetched?.invoke(season, weekends)
             weekends
         }.recoverCatching { error ->
-            // Offline with nothing in memory: the stored calendar beats an error screen.
             readDisk(season)?.also { stored -> mutex.withLock { cache[season] = stored } }
                 ?: throw error
         }
@@ -151,7 +128,6 @@ class JolpicaScheduleRepository(
         SessionKind.UNKNOWN -> "Session"
     }
 
-    /** Ergast splits the instant into `"2026-09-07"` + `"13:00:00Z"`; the time may be missing. */
     private fun toUtcMillis(date: String?, time: String?): Long? {
         val day = date?.trim().orEmpty()
         if (day.isEmpty()) return null
@@ -200,7 +176,6 @@ class JolpicaScheduleRepository(
     @Serializable
     private class CircuitDto(
         val circuitName: String? = null,
-        /** Wikipedia page of the circuit; the track-map fallback when F1's CDN has no map. */
         val url: String? = null,
         @SerialName("Location") val location: LocationDto? = null,
     )
@@ -225,7 +200,6 @@ class JolpicaScheduleRepository(
 
         private const val USER_AGENT = "Laply/1.0 (Android; +https://github.com/Spottq/Laply)"
 
-        /** Ergast country names -> ISO 3166-1 alpha-2, lowercase. */
         private val COUNTRY_TO_ALPHA2: Map<String, String> = mapOf(
             "argentina" to "ar", "australia" to "au", "austria" to "at", "azerbaijan" to "az",
             "bahrain" to "bh", "belgium" to "be", "brazil" to "br", "canada" to "ca",
@@ -243,12 +217,10 @@ class JolpicaScheduleRepository(
             "vietnam" to "vn",
         )
 
-        /** Circuit locations Ergast labels with something other than a plain country name. */
         private val LOCALITY_ALIASES: Map<String, String> = mapOf(
             "korea" to "kr", "europe" to "az", "san marino" to "sm",
         )
 
-        /** Country name -> ISO 3166-1 alpha-2, lowercase; null when unknown. */
         fun countryCodeOf(country: String?): String? {
             val key = country?.trim()?.lowercase()?.takeIf { it.isNotEmpty() } ?: return null
             return COUNTRY_TO_ALPHA2[key] ?: LOCALITY_ALIASES[key]

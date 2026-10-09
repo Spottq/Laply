@@ -3,10 +3,6 @@ package com.flexy.f1live.ui.components
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/**
- * The countdown units the Live tab and the widgets share ("in 1d 13h", "in 16h 41m", "in 8 min",
- * "Starting now"): whole units, rounded down, never seconds and never "0 min".
- */
 class CountdownFormatTest {
 
     private val minute = 60_000L

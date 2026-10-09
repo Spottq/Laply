@@ -6,26 +6,10 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-/**
- * Deep merge for the F1 SignalR feed.
- *
- * The "Subscribe" snapshot is a full JSON document; every `feed` invocation afterwards carries a
- * *partial* object that has to be merged into it. The feed has a few quirks:
- *
- *  * object into object -> recursive merge (keys not present in the delta are kept)
- *  * object into array   -> the delta object is keyed by array index ("0", "1", "2"); the entry is
- *                           merged into the element at that index, or appended when the index is at
- *                           or past the end (gaps are padded with `null`)
- *  * anything else       -> straight replacement (scalars, arrays, type changes)
- *  * `"_deleted"`        -> list of keys (or array indices) to remove from the *target* container
- *
- * Pure JVM, no Android dependencies, so it can be unit tested directly.
- */
 object JsonMerge {
 
     private const val DELETED_KEY = "_deleted"
 
-    /** Merges [delta] into [base] and returns a new element. [base] may be null (nothing known yet). */
     fun merge(base: JsonElement?, delta: JsonElement): JsonElement = when {
         delta !is JsonObject -> delta
         base is JsonObject -> mergeObject(base, delta)
@@ -33,7 +17,6 @@ object JsonMerge {
         else -> mergeObject(JsonObject(emptyMap()), delta)
     }
 
-    /** Convenience overload for the common "merge a topic delta into the snapshot root" case. */
     fun mergeTopic(root: JsonObject, topic: String, delta: JsonElement): JsonObject {
         val merged = merge(root[topic], delta)
         return JsonObject(LinkedHashMap(root).apply { put(topic, merged) })
@@ -51,7 +34,6 @@ object JsonMerge {
 
     private fun mergeIntoArray(base: JsonArray, delta: JsonObject): JsonElement {
         val entries = delta.filterKeys { it != DELETED_KEY }
-        // Only index-keyed objects address an array; anything else replaces it wholesale.
         if (entries.isNotEmpty() && entries.keys.any { it.toIndexOrNull() == null }) {
             return mergeObject(JsonObject(emptyMap()), delta)
         }
@@ -70,7 +52,6 @@ object JsonMerge {
         return JsonArray(out)
     }
 
-    /** `_deleted` arrives either as an array of keys or (rarely) as an index-keyed object. */
     private fun deletedKeys(delta: JsonObject): List<String> =
         when (val marker = delta[DELETED_KEY]) {
             is JsonArray -> marker.mapNotNull { it.asKeyOrNull() }

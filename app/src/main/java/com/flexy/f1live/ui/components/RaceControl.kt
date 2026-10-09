@@ -20,16 +20,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.flexy.f1live.model.RaceControlMessage
 
-/**
- * One race-control line: the flag's colour, the message, and its time in the device time zone.
- * Shared by the Live tab's latest-messages card and the full race control log.
- */
 @Composable
 fun RaceControlRow(message: RaceControlMessage, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            // One item to a screen reader, and one semantics node per row in a long log.
             .semantics(mergeDescendants = true) {}
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.Top,

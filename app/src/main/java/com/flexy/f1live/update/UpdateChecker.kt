@@ -20,13 +20,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
 
-/**
- * Looks for a newer Laply on GitHub Releases (github.com/Spottq/Laply) and, from the daily
- * [UpdateCheckWorker], tells the user about it with one notification per version.
- *
- * `releases/latest` never returns drafts or pre-releases, so only published stable releases are
- * offered. Unauthenticated calls are limited to 60 an hour per IP, far above one a day.
- */
 object UpdateChecker {
 
     const val LATEST_RELEASE_URL = "https://api.github.com/repos/Spottq/Laply/releases/latest"
@@ -40,18 +33,15 @@ object UpdateChecker {
     private const val KEY_LAST_NOTIFIED_TAG = "last_notified_tag"
 
     sealed interface Result {
-        /** The installed build is the latest release (or newer, or none is published yet). */
         data class UpToDate(val installed: String) : Result
         data class Available(val release: GitHubRelease) : Result
         data class Failed(val error: Throwable) : Result
     }
 
-    /** The installed `versionName`, e.g. "1.0". */
     fun installedVersion(context: Context): String = runCatching {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName
     }.getOrNull().orEmpty()
 
-    /** One request to the GitHub API; never throws. */
     suspend fun check(context: Context, http: OkHttpClient): Result {
         val installed = installedVersion(context)
         return try {
@@ -68,7 +58,6 @@ object UpdateChecker {
         }
     }
 
-    /** The latest release, or null when the repository has none yet (HTTP 404). */
     private suspend fun fetchLatest(http: OkHttpClient): GitHubRelease? = withContext(Dispatchers.IO) {
         val request = Request.Builder()
             .url(LATEST_RELEASE_URL)
@@ -85,15 +74,10 @@ object UpdateChecker {
         }
     }
 
-    /** What a tap on the notification or the Settings snackbar opens: the APK, else the page. */
     fun downloadIntent(release: GitHubRelease): Intent =
         Intent(Intent.ACTION_VIEW, Uri.parse(release.apkUrl ?: release.htmlUrl))
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-    /**
-     * Posts the "update available" notification unless this version was already announced or
-     * notifications are not allowed. Returns true when it was posted.
-     */
     fun notifyIfNew(context: Context, release: GitHubRelease): Boolean {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (prefs.getString(KEY_LAST_NOTIFIED_TAG, null) == release.tagName) return false

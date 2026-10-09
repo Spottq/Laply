@@ -31,7 +31,6 @@ class JsonMergeTest {
         assertEquals("1", line["Position"]!!.jsonPrimitive.content)
         assertEquals(9, line["NumberOfLaps"]!!.jsonPrimitive.content.toInt())
         assertEquals("1:22.067", line["BestLapTime"]!!.jsonObject["Value"]!!.jsonPrimitive.content)
-        // nested scalar not mentioned in the delta survives
         assertEquals(6, line["BestLapTime"]!!.jsonObject["Lap"]!!.jsonPrimitive.content.toInt())
     }
 
@@ -131,7 +130,6 @@ class JsonMergeTest {
             result["TimingData"]!!.jsonObject["Lines"]!!.jsonObject["1"]!!
                 .jsonObject["Position"]!!.jsonPrimitive.content,
         )
-        // the input document is untouched
         assertEquals("1", root["TrackStatus"]!!.jsonObject["Status"]!!.jsonPrimitive.content)
     }
 
@@ -145,11 +143,9 @@ class JsonMergeTest {
             val topic = args[0].jsonPrimitive.content
             document = JsonMerge.mergeTopic(document, topic, args[1])
         }
-        // every topic of the snapshot survives 120 deltas
         assertTrue(document.keys.containsAll(snapshot.keys))
         val lines = document["TimingData"]!!.jsonObject["Lines"]!!.jsonObject
         assertEquals(22, lines.size)
-        // sectors stayed arrays after index-keyed merges
         val sectors = lines["12"]!!.jsonObject["Sectors"]!!.jsonArray
         assertEquals(3, sectors.size)
         assertFalse(sectors[0].jsonObject["Segments"]!!.jsonArray.isEmpty())

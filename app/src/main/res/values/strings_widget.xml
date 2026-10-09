@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Home-screen widgets (com.flexy.f1live.widget). -->
     <string name="widget_label">Laply</string>
     <string name="widget_description">Countdown to the next session and the race weekend ahead. Resize it from 2x1 to full screen: it shows more the bigger it gets.</string>
     <string name="widget_config_title">Widget settings</string>
     <string name="widget_config_done">Done</string>
 
-    <!-- Overline of the widget card once the weekend has begun; %1$d is the round number. -->
     <string name="widget_this_weekend_overline">This weekend · R%1$d</string>
     <string name="widget_live">LIVE</string>
-    <!-- Session day and time; %1$s is the local time, %2$s the short weekday. -->
+    <!-- Session day and time -->
     <string name="widget_when_today">Today · %1$s</string>
     <string name="widget_when_tomorrow">Tomorrow · %1$s</string>
     <string name="widget_when_weekday">%2$s · %1$s</string>
     <string name="widget_empty_title">No upcoming sessions</string>
     <string name="widget_empty_body">Open Laply to load the calendar</string>
 
-    <!-- Static widget-picker preview (Android 12-14; 15+ shows a generated live preview). -->
+    <!-- Static widget-picker preview -->
     <string name="widget_preview_overline">Next round</string>
     <string name="widget_preview_gp" translatable="false">Italian GP</string>
     <string name="widget_preview_session" translatable="false">Qualifying</string>

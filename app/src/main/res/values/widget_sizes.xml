@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Cell sizes offered to One UI Home (xml/widget_supported_cell_size_info.xml): 2x1 up to 7x7,
-     as in blur-widget-demo (MIT, (c) 2026 Josh Skinner). -->
 <resources>
     <string-array name="widget_support_cell_sizes" translatable="false">
         <item>2x1</item>
@@ -47,7 +45,6 @@
         <item>7x7</item>
     </string-array>
 
-    <!-- The standings widgets (xml/widget_standings_cell_size_info.xml): a table needs two rows. -->
     <string-array name="widget_standings_cell_sizes" translatable="false">
         <item>2x2</item>
         <item>2x3</item>

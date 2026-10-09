@@ -12,7 +12,7 @@
     <string name="session_over">Session finished · Follow to get a Live Update for the next session</string>
     <string name="live_timing_unreachable">Live timing is unreachable right now: neither F1 nor ESPN answers.</string>
     <string name="next_session">Next session</string>
-    <!-- Large-screen Live tab: the circuit map and the conditions card of the left pane. -->
+    <!-- Large-screen Live tab -->
     <string name="circuit">Circuit</string>
     <plurals name="circuit_turns">
         <item quantity="one">%1$d turn</item>
@@ -24,15 +24,12 @@
     <string name="rain_wet">Wet</string>
     <string name="rain_dry">Dry</string>
     <string name="track_status">Track</string>
-    <!-- Overline of the Live tab's next-weekend card; %1$d is the round number. -->
     <string name="next_round_overline">Next round · R%1$d</string>
     <string name="next_round_open_schedule">Open schedule</string>
     <string name="weekend_forecast">Weekend forecast</string>
     <string name="forecast_loading">Loading forecast&#8230;</string>
-    <!-- %1$s is a date such as "Tue 13 Oct": when the weekend comes into the 16-day forecast. -->
     <string name="forecast_too_early">The forecast opens on %1$s</string>
     <string name="forecast_unavailable">Forecast unavailable</string>
-    <!-- %1$d is the chance of precipitation in percent. -->
     <string name="rain_chance">%1$d%% chance of rain</string>
     <string name="weather_clear">Clear</string>
     <string name="weather_partly_cloudy">Partly cloudy</string>
@@ -42,7 +39,7 @@
     <string name="weather_rain">Rain</string>
     <string name="weather_snow">Snow</string>
     <string name="weather_thunderstorm">Thunderstorm</string>
-    <!-- Countdown to the next session: days/hours, hours/minutes, minutes. -->
+    <!-- Countdown to the next session -->
     <string name="countdown_days_hours">in %1$dd %2$dh</string>
     <string name="countdown_hours_minutes">in %1$dh %2$dm</string>
     <string name="countdown_minutes">in %1$d min</string>

@@ -65,18 +65,8 @@ import java.util.Locale
 
 private const val MINUTE_MILLIS = 60_000L
 
-/** Corner of the plates inside the card: the card's own corner less its 8dp inset. */
 private val InsetCorner = 20.dp
 
-/**
- * The weekend coming up, shown on the Live tab: round, Grand Prix, circuit and dates on top, and an
- * inset strip with the next session and a countdown to it; below them, the weekend's forecast day
- * by day.
- *
- * The circuit is F1's plain outline (see [CircuitMaps.f1OutlineUrl]) - just the track, without the
- * DRS zones and turn numbers of the detailed map - tinted with the theme. Coil loads it lazily and
- * caches it; the card never waits for it, and a circuit without an outline simply has none.
- */
 @Composable
 fun NextRoundCard(
     next: UpcomingSession,
@@ -84,10 +74,6 @@ fun NextRoundCard(
     modifier: Modifier = Modifier,
     weather: WeekendWeather = WeekendWeather.Loading,
     nowMillis: Long = rememberMinuteClock(),
-    /**
-     * A narrow large-screen pane (~300dp): a smaller title and outline, so a long Grand Prix name
-     * still fits on two lines next to the map.
-     */
     compact: Boolean = false,
 ) {
     val weekend = next.weekend
@@ -178,18 +164,14 @@ fun NextRoundCard(
                     model = mapUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Fit,
-                    // The outline is one dark line on transparency: SrcIn repaints it in the
-                    // theme's colour and leaves the rest see-through, in light and dark alike.
                     colorFilter = ColorFilter.tint(colors.onSurfaceVariant, BlendMode.SrcIn),
                     modifier = Modifier
                         .width(if (compact) 84.dp else 112.dp)
-                        // F1 draws every outline on a 121 x 85 canvas.
                         .aspectRatio(121f / 85f),
                 )
             }
         }
 
-        // The inset: what actually happens next, and how long until it does.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -266,7 +248,6 @@ private fun PlateTitle(@StringRes text: Int) {
     )
 }
 
-/** One column per weekend day: the sky, the high and low, and the chance of rain. */
 @Composable
 private fun ForecastPlate(weather: WeekendWeather) {
     Plate {
@@ -352,13 +333,11 @@ private fun DayColumn(day: DayForecast, modifier: Modifier) {
     }
 }
 
-/** First to last known session of the weekend, e.g. "4 – 6 Sep". */
 private fun weekendDates(weekend: RaceWeekend): String {
     val starts = weekend.sessions.mapNotNull { it.startUtcMillis }
     return formatDateRange(starts.minOrNull(), starts.maxOrNull() ?: weekend.raceStartUtcMillis)
 }
 
-/** Wall-clock time that ticks on every minute boundary - enough for a d/h/m countdown. */
 @Composable
 private fun rememberMinuteClock(): Long {
     val now by produceState(System.currentTimeMillis()) {
@@ -371,7 +350,6 @@ private fun rememberMinuteClock(): Long {
     return now
 }
 
-/** "in 2d 14h", "in 3h 12m", "in 8 min"; "Starting now" - the wording the widgets share. */
 @Composable
 private fun countdownText(remainingMillis: Long): String =
     formatCountdown(LocalContext.current.resources, remainingMillis)
@@ -406,7 +384,6 @@ private fun NextRoundCardPreview() {
             next = UpcomingSession(weekend, session),
             onClick = {},
             weather = WeekendWeather.Ready(PreviewForecast),
-            // A fixed "now" 2 days 14 hours before the session, so the countdown is stable.
             nowMillis = (session.startUtcMillis ?: 0L) - (2L * 24 + 14) * 60 * MINUTE_MILLIS,
             modifier = Modifier.padding(16.dp),
         )

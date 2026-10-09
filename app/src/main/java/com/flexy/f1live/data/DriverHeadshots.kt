@@ -3,17 +3,9 @@ package com.flexy.f1live.data
 import com.flexy.f1live.model.LiveSessionState
 import java.text.Normalizer
 
-/**
- * Driver headshots by TLA (media.formula1.com URLs as served in the live feed's DriverList).
- * Used where a data source (Jolpica standings, ESPN) has no image: null when unknown.
- */
 object DriverHeadshots {
     private const val BASE = "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/"
 
-    /**
-     * F1's current media library, cropped to the face at the same scale as the fom-website
-     * portraits (`z_0.6` keeps the shoulders in, the way the "1col" transform does).
-     */
     private const val CURRENT_BASE =
         "https://media.formula1.com/image/upload/c_thumb,g_face,w_200,h_200,z_0.6/q_auto/v1740000001/common/f1/"
 
@@ -45,18 +37,12 @@ object DriverHeadshots {
         "SAR" to "L/LOGSAR01_Logan_Sargeant/logsar01",
     )
 
-    /**
-     * Drivers the fom-website library gets wrong: it has no portrait of Lindblad at all (the grey
-     * fallback silhouette) and still shows Perez in Red Bull and Hulkenberg in Sauber overalls.
-     * These win over every other source, the live feed and stored sessions included.
-     */
     private val current: Map<String, String> = mapOf(
         "LIN" to "2026/racingbulls/arvlin01/2026racingbullsarvlin01right.webp",
         "PER" to "2026/cadillac/serper01/2026cadillacserper01right.webp",
         "HUL" to "2026/audi/nichul01/2026audinichul01right.webp",
     )
 
-    /** ESPN spells some TLAs with their accents ("HÜL", "PÉR"); the tables use plain letters. */
     private fun key(tla: String?): String? =
         tla?.let { Normalizer.normalize(it, Normalizer.Form.NFD) }
             ?.replace(CombiningMarks, "")
@@ -71,10 +57,8 @@ object DriverHeadshots {
         currentFor(tla)
             ?: key(tla)?.let(byTla::get)?.let { "$BASE$it.png.transform/1col/image.png" }
 
-    /** [url] from a feed or from disk, unless this driver has a corrected portrait. */
     fun resolve(tla: String?, url: String?): String? = currentFor(tla) ?: url
 
-    /** Re-points a stored classification at the corrected portraits; unchanged if none apply. */
     fun refresh(state: LiveSessionState): LiveSessionState {
         if (state.drivers.none { currentFor(it.tla) != null }) return state
         return state.copy(

@@ -31,7 +31,6 @@ class TitleFightTest {
         ),
     )
 
-    /** 24 rounds a week apart, round 20 the most recent; round 22 has a sprint. */
     private val calendar = (1..24).map { round ->
         weekend(round, raceStart = now + (round - 20) * 7 * day - day, sprint = round == 22)
     }
@@ -63,7 +62,6 @@ class TitleFightTest {
     @Test
     fun `drivers who cannot reach the leader any more fall below the line`() {
         val fight = TitleFight.of(table, afterRound = 20, weekends = calendar, nowUtcMillis = now)!!
-        // 241 + 108 still reaches 324; 198 + 108 does not.
         assertEquals(3, fight.contenders)
         assertFalse(fight.decided)
     }
@@ -101,13 +99,10 @@ class TitleFightTest {
 
     @Test
     fun `standings after a sprint still leave that weekend's race to come`() {
-        // Round 22 is the sprint weekend; its race starts 13 days from now.
         val beforeRace = TitleFight.of(table, afterRound = 22, weekends = calendar, nowUtcMillis = now + 12 * day)!!
         assertEquals(3, beforeRace.racesLeft)
         assertEquals(0, beforeRace.sprintsLeft)
 
-        // Published after the race they carry the same round number, so the race keeps counting
-        // for a day: an extra driver above the line for a few hours beats one dropped too early.
         val rightAfter = TitleFight.of(table, afterRound = 22, weekends = calendar, nowUtcMillis = now + 13 * day + 3_600_000L)!!
         assertEquals(3, rightAfter.racesLeft)
 
@@ -149,10 +144,8 @@ class TitleFightTest {
     fun `a team can score a one-two in every race and sprint left`() {
         val teams = listOf(team(1, 626.0), team(2, 520.0), team(3, 450.0), team(4, 400.0))
         val fight = TitleFight.ofConstructors(teams, afterRound = 20, weekends = calendar, nowUtcMillis = now)!!
-        // 4 races x 43 + 1 sprint x 15.
         assertEquals(187, fight.pointsLeft)
         assertEquals("4 races + 1 sprint left · 187 pts to play for", fight.summary)
-        // 450 + 187 still reaches 626; 400 + 187 does not.
         assertEquals(3, fight.contenders)
     }
 

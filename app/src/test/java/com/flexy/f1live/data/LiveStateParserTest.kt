@@ -68,7 +68,6 @@ class LiveStateParserTest {
 
     @Test
     fun `the fastest lap of the session is flagged on exactly one driver`() {
-        // TimingStats.Lines[n].PersonalBestLapTime.Position == 1 is the purple lap of the tower.
         val holders = state.drivers.filter { it.fastestLap }
         assertEquals(1, holders.size)
         assertEquals("PIA", holders.single().tla)
@@ -78,12 +77,9 @@ class LiveStateParserTest {
     @Test
     fun `best sectors come from TimingStats, not from the last lap`() {
         val leader = state.drivers.first()
-        // TimingData.Sectors is whatever the car did on its most recent lap; TimingStats
-        // .BestSectors is the session best, which is what a finished classification shows.
         assertEquals(3, leader.bestSectors.size)
         assertTrue(leader.bestSectors.all { it.value.isNotBlank() })
         assertTrue(leader.bestSectors.all { it.personalFastest })
-        // Position 1 in a sector means nobody in the session went quicker.
         assertTrue(
             "the session leader holds at least one overall-best sector",
             leader.bestSectors.any { it.overallFastest },
@@ -95,7 +91,6 @@ class LiveStateParserTest {
         val second = state.drivers[1]
         assertEquals("1", second.racingNumber)
         assertEquals("L. Norris", second.shortName)
-        // Stats[1] is Q2 (SessionPart == 2), not Stats[0] which still holds the Q1 gap.
         assertEquals("+0.050", second.gapToLeader)
         assertEquals("+0.050", second.interval)
         assertEquals("1:22.067", second.bestLapTime)
@@ -105,8 +100,6 @@ class LiveStateParserTest {
     @Test
     fun `stints come oldest first with the laps of each run`() {
         val norris = state.drivers.first { it.racingNumber == "1" }
-        // TotalLaps is the age of the set, StartLaps the age it went out on: the second run was
-        // on the first run's set, which already had 4 laps on it.
         assertEquals(
             listOf(
                 TyreStint("SOFT", isNew = true, laps = 4),
@@ -157,7 +150,6 @@ class LiveStateParserTest {
         )
         val driver = state.drivers.single()
         assertEquals(listOf(null, "HARD"), driver.stints.map { it.compound })
-        // No count on the timing line: the stint change stands in for it.
         assertEquals(1, driver.pitStops)
         assertEquals(listOf(12), driver.pitStopLaps)
     }
@@ -184,7 +176,6 @@ class LiveStateParserTest {
         assertEquals("CLEAR IN TRACK SECTOR 6", first.message)
         assertEquals("Flag", first.category)
         assertEquals("CLEAR", first.flag)
-        // "2026-09-05T13:50:42" has no zone and must be read as UTC.
         assertEquals(1788616242000L, first.utcMillis)
         val times = state.raceControl.mapNotNull { it.utcMillis }
         assertEquals(times.sorted(), times)
@@ -201,8 +192,6 @@ class LiveStateParserTest {
         assertNull(LiveStateParser.countryCodeOf("ZZZ"))
         assertNull(LiveStateParser.countryCodeOf(null))
         assertNull(LiveStateParser.countryCodeOf(""))
-        // this snapshot's DriverList has no CountryCode at all
-        // The feed has no CountryCode; flags come from the static TLA table instead.
         assertTrue(state.drivers.all { it.countryCode != null })
         assertEquals("nl", state.drivers.first { it.tla == "VER" }.countryCode)
     }

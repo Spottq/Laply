@@ -12,7 +12,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Mapping of the ESPN fallback feed; fixtures are trimmed copies of the real documents. */
 class EspnMapperTest {
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
@@ -63,7 +62,6 @@ class EspnMapperTest {
           ]}]}
     """.trimIndent()
 
-    /** `?dates=YYYY`: every event of the season, most of them already finished. */
     private val seasonScoreboard = """
         {"events":[
           {"id":"600057441","name":"Heineken Dutch Grand Prix",
@@ -111,7 +109,6 @@ class EspnMapperTest {
         ]}
     """.trimIndent()
 
-    /** A finished qualifying: all three parts published. */
     private val qualifyingStats = """
         {"splits":{"categories":[
           {"name":"general","stats":[
@@ -127,7 +124,6 @@ class EspnMapperTest {
             {"name":"lastUpdated","displayValue":"2026-09-05T14:53:48Z"}]}]}}
     """.trimIndent()
 
-    /** Q3 is still running, so its time is not published yet. */
     private val qualifyingStatsQ2Only = """
         {"splits":{"categories":[{"name":"general","stats":[
           {"name":"lapsCompleted","displayValue":"9"},
@@ -216,8 +212,6 @@ class EspnMapperTest {
     fun `the last completed session is the newest finished one of the newest event`() {
         val season = EspnMapper.parseScoreboard(obj(seasonScoreboard))
         val last = EspnMapper.pickLastCompleted(season)!!
-        // Monza's qualifying is finished and newer than anything at Zandvoort; the Monza race is
-        // still scheduled, so it must not win.
         assertEquals("401839101", last.competitionId)
         assertEquals("Qualifying", last.sessionName)
         assertEquals("Italian Grand Prix", last.meetingName)
@@ -250,7 +244,7 @@ class EspnMapperTest {
         val stats = EspnMapper.parseStatistics(obj(qualifyingStats))
         assertEquals("14", stats["lapsCompleted"])
         assertEquals("1:11.163", stats["qual3TimeMS"])
-        assertEquals("1", stats["position"]) // from the gapToLeader category
+        assertEquals("1", stats["position"])
         assertEquals("2026-09-05T14:53:48Z", stats["lastUpdated"])
     }
 
@@ -311,8 +305,8 @@ class EspnMapperTest {
         assertEquals("00D2BE", russell.teamColorHex)
         assertEquals(DriverHeadshots.forTla("RUS"), russell.headshotUrl)
         assertEquals("gb", russell.countryCode)
-        assertEquals("1:11.163", russell.bestLapTime) // Q3 published
-        assertEquals("", russell.gapToLeader)         // never a gap in qualifying
+        assertEquals("1:11.163", russell.bestLapTime)
+        assertEquals("", russell.gapToLeader)
         assertEquals("", russell.interval)
         assertEquals(14, russell.numberOfLaps)
         assertFalse(russell.inPit)
@@ -325,15 +319,15 @@ class EspnMapperTest {
         assertEquals("ANT", antonelli.tla)
         assertEquals("12", antonelli.racingNumber)
         assertEquals("it", antonelli.countryCode)
-        assertEquals("1:11.902", antonelli.bestLapTime) // Q3 still "0.000" -> Q2 time
+        assertEquals("1:11.902", antonelli.bestLapTime)
         assertTrue(antonelli.inPit)
 
         val verstappen = state.drivers[2]
         assertEquals("VER", verstappen.tla)
         assertEquals("nl", verstappen.countryCode)
-        assertEquals("", verstappen.bestLapTime) // no statistics document at all
+        assertEquals("", verstappen.bestLapTime)
         assertTrue(verstappen.retired)
-        assertEquals(3, verstappen.numberOfLaps) // falls back to the status period
+        assertEquals(3, verstappen.numberOfLaps)
     }
 
     @Test
@@ -362,7 +356,6 @@ class EspnMapperTest {
 
     @Test
     fun `a completed session still marked in progress reads as finished`() {
-        // ESPN keeps state "in" for a while after the flag and only flips the type name.
         assertEquals(SessionStatus.FINISHED, EspnMapper.statusOf("in", "STATUS_SESSION_COMPLETE"))
         assertEquals(SessionStatus.FINISHED, EspnMapper.statusOf("post", "STATUS_FINAL"))
         assertEquals(SessionStatus.STARTED, EspnMapper.statusOf("in", "STATUS_IN_PROGRESS"))
@@ -414,14 +407,12 @@ class EspnMapperTest {
 
     // ------------------------------------------------- flag, lap count and the live race gap
 
-    /** `.../competitions/{id}/status` - the only ESPN document that carries the track flag. */
     private val competitionStatus = """
         {"clock":0.0,"displayClock":"0:00","period":4,
          "type":{"id":"2","name":"STATUS_IN_PROGRESS","state":"in","completed":false},
          "flag":"RED"}
     """.trimIndent()
 
-    /** A race in progress: ESPN publishes the gap under `gapToLeader`, not `behindTime`. */
     private val liveRaceStats = """
         {"splits":{"categories":[
           {"name":"general","stats":[
@@ -465,7 +456,6 @@ class EspnMapperTest {
 
     @Test
     fun `a live race maps the gap, the flag and the lap count`() {
-        // The scoreboard's race entry has no roster yet, so reuse the one that has drivers.
         val competition = EspnMapper.parseScoreboard(obj(scoreboard)).first { it.state == "in" }
             .copy(sessionName = "Race", sessionKind = SessionKind.RACE)
         val state = EspnMapper.buildState(
@@ -494,7 +484,6 @@ class EspnMapperTest {
             statistics = mapOf("5601" to EspnMapper.parseStatistics(obj(liveRaceStats))),
             statuses = emptyMap(),
             nowUtcMillis = 1_700_000_000_000L,
-            // `period` reads 4 here: a 3-lap race is over and must still say 3/3.
             competitionStatus = EspnMapper.parseCompetitionStatus(obj(competitionStatus)),
             totalLaps = 3,
         )

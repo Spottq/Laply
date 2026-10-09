@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Samsung One UI lock screen / AOD / cover screen widget, 2x1: the next F1 session and a countdown.
-    widgetCategory 0x2000 is Samsung's lock-screen category (not in the AOSP enum, so a raw value):
-    stock launchers, which only list home-screen widgets, never show it. The app: attributes are
-    Samsung's (see values/attrs.xml and values/attrs_samsung_lock.xml). Adapted from twidget (MIT, © 2026 Josh Skinner),
-    res/xml/lockscreen_message_2x1_widget_info.xml.
--->
+<!-- widgetCategory 0x2000 is Samsung's lock-screen category. Adapted from twidget (MIT, © 2026 Josh Skinner). -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"

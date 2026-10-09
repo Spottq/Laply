@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The 2x2 lock-screen widget is offered on tablets (values-sw600dp) and foldables only:
-         read by SamsungLockWidgetLarge.syncEnabled (as in the user's LockWidgets project). -->
     <bool name="lock_large_tablet">false</bool>
 </resources>

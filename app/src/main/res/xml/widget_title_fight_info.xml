@@ -1,7 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Standings widget, the title fight: leader and gaps (widget/standings/StandingsWidget.kt). 4x2 by default,
-     resizable from 2x2 (it needs two rows) and laid out for its exact size. The settings and the
-     Samsung size and style attributes are as for the session widget (widget_f1_live_info.xml). -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:configure="com.flexy.f1live.widget.WidgetConfigActivity"

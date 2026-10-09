@@ -27,12 +27,6 @@ import org.junit.Test
 import java.io.IOException
 import java.util.concurrent.CopyOnWriteArrayList
 
-/**
- * Switch-over behaviour of [CompositeLiveTimingClient] against two fake feeds.
- *
- * The thresholds are constructor parameters, so the tests drive real (tiny) timings instead of a
- * virtual clock - the client itself only waits on its watchdog interval.
- */
 class CompositeLiveTimingClientTest {
 
     private val primary = FakeLiveTimingClient()
@@ -81,7 +75,6 @@ class CompositeLiveTimingClientTest {
         assertEquals(1, fallback.startCount)
         assertTrue("the primary keeps retrying in the background", primary.isRunning)
 
-        // The primary keeps reporting failures and empty states; ESPN must stay on screen.
         fallback.push(espnState)
         awaitUntil("espn state mirrored") { composite.state.value.source == LiveSource.ESPN }
         primary.push(LiveSessionState.EMPTY)
@@ -90,7 +83,6 @@ class CompositeLiveTimingClientTest {
         assertEquals(LiveSource.ESPN, composite.state.value.source)
         assertEquals(2, composite.state.value.drivers.size)
 
-        // The block lifts: a real snapshot takes over and ESPN is shut down again.
         primary.push(f1State)
         awaitUntil("fallback stopped") { !fallback.isRunning }
         assertEquals(LiveSource.F1_LIVE_TIMING, composite.state.value.source)
@@ -139,8 +131,6 @@ class CompositeLiveTimingClientTest {
     @Test
     fun `a primary that never answers is raced by the fallback after the short first window`() =
         runBlocking {
-            // A black-holed connect produces no error for many seconds; the long window must not
-            // apply before the primary has delivered anything at all.
             val composite = client(snapshotTimeoutMs = 60_000L, initialSnapshotTimeoutMs = 150L)
             composite.start()
             awaitUntil("primary started") { primary.startCount == 1 }
@@ -148,7 +138,6 @@ class CompositeLiveTimingClientTest {
 
             awaitUntil("first-snapshot window fired") { fallback.isRunning }
 
-            // The primary still wins the moment it delivers.
             primary.push(f1State)
             awaitUntil("fallback stopped") { !fallback.isRunning }
             assertEquals(LiveSource.F1_LIVE_TIMING, composite.state.value.source)
@@ -162,7 +151,6 @@ class CompositeLiveTimingClientTest {
         primary.push(f1State)
         awaitUntil("live state on screen") { composite.state.value.source == LiveSource.F1_LIVE_TIMING }
 
-        // An idle but healthy feed only heartbeats every few seconds; that is not a block.
         Thread.sleep(400)
         assertFalse(fallback.isRunning)
     }
@@ -178,7 +166,6 @@ class CompositeLiveTimingClientTest {
         primary.push(f1State)
         awaitUntil("live state on screen") { composite.state.value.source == LiveSource.F1_LIVE_TIMING }
 
-        // The late cache read must not replace what the network already produced.
         Thread.sleep(1_200)
         assertEquals(LiveSource.F1_LIVE_TIMING, composite.state.value.source)
     }
@@ -210,7 +197,6 @@ class CompositeLiveTimingClientTest {
         awaitUntil("fallback started") { fallback.isRunning }
         awaitUntil("primary error logged") { logged.any { it.contains("HTTP 403") } }
 
-        // ESPN has a classification on screen: a later ESPN hiccup is logged, not shown.
         fallback.push(espnState)
         awaitUntil("espn state mirrored") { composite.state.value.source == LiveSource.ESPN }
         awaitUntil("espn error logged", timeoutMs = 3_000L) {
@@ -287,7 +273,6 @@ class CompositeLiveTimingClientTest {
 
         composite.start()
 
-        // Synchronous: start() publishes the preloaded snapshot before it touches either feed.
         assertEquals(LiveSource.CACHE, composite.state.value.source)
         assertEquals(2, composite.state.value.drivers.size)
         awaitUntil("primary started") { primary.startCount == 1 }
@@ -310,14 +295,11 @@ class CompositeLiveTimingClientTest {
         composite.start()
         awaitUntil("primary started") { primary.startCount == 1 }
 
-        // The SignalR client resets to EMPTY on every reconnect; ESPN publishes a connected but
-        // driver-less snapshot whenever the scoreboard has no roster yet. Neither may blank it.
         primary.push(LiveSessionState.EMPTY)
         primary.push(LiveSessionState.EMPTY.copy(isConnected = true, source = LiveSource.F1_LIVE_TIMING))
         Thread.sleep(50)
         assertEquals(2, composite.state.value.drivers.size)
 
-        // A real snapshot takes over, and the same empty snapshots still cannot displace it.
         primary.push(f1State)
         awaitUntil("live state on screen") { composite.state.value.source == LiveSource.F1_LIVE_TIMING }
         primary.push(LiveSessionState.EMPTY)
@@ -325,7 +307,6 @@ class CompositeLiveTimingClientTest {
         assertEquals(3, composite.state.value.drivers.size)
         assertTrue(composite.state.value.isLive)
 
-        // Only an explicit stop clears the screen.
         composite.stop()
         assertEquals(LiveSessionState.EMPTY, composite.state.value)
     }
@@ -350,18 +331,14 @@ class CompositeLiveTimingClientTest {
         )
         val rich = cachedState
 
-        // The stored session knows the lap times; a thinner ESPN copy of it must not win.
         assertEquals(rich, preferState(rich, thin))
-        // The same session with more in it does win.
         val richer = rich.copy(
             source = LiveSource.ESPN,
             drivers = rich.drivers.map { it.copy(gapToLeader = "+0.263") },
         )
         assertEquals(richer, preferState(rich, richer))
-        // A different session from the network always wins over the cache.
         val other = thin.copy(meetingName = "Italian Grand Prix")
         assertEquals(other, preferState(rich, other))
-        // And the cache never overwrites something the network produced.
         assertEquals(other, preferState(other, rich))
     }
 
@@ -380,21 +357,16 @@ class CompositeLiveTimingClientTest {
     @Test
     fun `preferState lets only the same session end a live one`() {
         val live = espnState
-        // The network reports this very session as over: the finish goes on screen.
         val finished = live.copy(status = SessionStatus.FINALISED)
         assertEquals(finished, preferState(live, finished))
-        // Some other, earlier session that is over must not end the live one.
         val earlier = finished.copy(sessionName = "Practice 3")
         assertEquals(live, preferState(live, earlier))
-        // Nor may the disk cache, even for the same session.
         val cached = finished.copy(source = LiveSource.CACHE)
         assertEquals(live, preferState(live, cached))
     }
 
     @Test
     fun `the official feed always takes over from the disk copy`() {
-        // A qualifying break: the stored copy of the part just finished is the richer one, but the
-        // live feed of the same session must still win, or the Live Update never sees it.
         val thinLive = f1State.copy(
             meetingName = cachedState.meetingName,
             status = SessionStatus.FINISHED,
@@ -414,7 +386,6 @@ class CompositeLiveTimingClientTest {
         fail("timed out waiting for: $what")
     }
 
-    /** The stored last session: finished, populated, and tagged as coming off disk. */
     private val cachedState = LiveSessionState.EMPTY.copy(
         meetingName = "Dutch Grand Prix",
         sessionName = "Qualifying",
@@ -501,7 +472,6 @@ class CompositeLiveTimingClientTest {
             _errors.emit(IOException(message))
         }
 
-        /** Non-suspending variant for polling loops; true when somebody was listening. */
         fun failNow(message: String): Boolean = _errors.tryEmit(IOException(message))
 
         fun push(state: LiveSessionState) {

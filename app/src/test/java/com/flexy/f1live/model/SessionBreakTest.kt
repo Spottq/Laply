@@ -14,7 +14,6 @@ class SessionBreakTest {
 
     private val moscow = ZoneId.of("Europe/Moscow")
 
-    /** Singapore, 9 Oct 2026: SQ1 flag at 15:52 Moscow (20:52 local), SQ2 delay at 15:55. */
     private fun at(hhmm: String): Long =
         Instant.parse("2026-10-09T${hhmm}:00Z").toEpochMilli()
 
@@ -53,7 +52,6 @@ class SessionBreakTest {
         val timed = sqBreak.copy(
             raceControl = sqBreak.raceControl + message("13:00", "SQ2 WILL START AT 21:15"),
         )
-        // 21:15 in Singapore (UTC+8) is 16:15 in Moscow (UTC+3).
         assertEquals("SQ2 WILL START AT 16:15", SessionBreak.delayText(timed, moscow))
     }
 
@@ -101,7 +99,6 @@ class SessionBreakTest {
                 message("12:45", "RESUMPTION TIME WILL BE ANNOUNCED"),
             ),
         )
-        // Only what came after the latest red flag counts.
         assertEquals("RESUMPTION TIME WILL BE ANNOUNCED", SessionBreak.delayNotice(redFlag)?.message)
         assertEquals("Restart delayed", SessionBreak.delayLabel(redFlag))
     }

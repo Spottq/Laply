@@ -8,11 +8,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** The 2x2 lock-screen widget lists the sessions after its headline, as many as fit. */
 class LockWidgetLargePlanTest {
 
     private val hour = WidgetPlanner.HOUR_MS
-    private val base = 1_757_676_600_000L // Fri 12 Sep 2025 11:30 UTC
+    private val base = 1_757_676_600_000L
 
     private val baku = RaceWeekend(
         season = 2025,
@@ -42,7 +41,7 @@ class LockWidgetLargePlanTest {
 
     @Test
     fun liveHeadlineRowsAreWhatComesNext() {
-        val now = base + 2 * hour + 10 * 60_000L // FP1 running
+        val now = base + 2 * hour + 10 * 60_000L
         val entries = entries(now)
         assertTrue(LockWidgetPlan.of(entries, now) is LockWidgetPlan.Live)
         assertEquals(SessionKind.PRACTICE2, LockWidgetLargePlan.rows(entries, 1).single().session.kind)
@@ -50,7 +49,7 @@ class LockWidgetLargePlanTest {
 
     @Test
     fun rowsNeverExceedWhatIsLeft() {
-        val now = base + 31 * hour // only the race left
+        val now = base + 31 * hour
         assertEquals(emptyList<Any>(), LockWidgetLargePlan.rows(entries(now), 2))
         assertEquals(emptyList<Any>(), LockWidgetLargePlan.rows(emptyList(), 2))
     }

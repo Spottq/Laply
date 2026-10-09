@@ -103,7 +103,6 @@ object StandingsLockWidget {
             .filterValues { it.isNotEmpty() }
     }
 
-    // The receivers ship disabled: Samsung's lock screen has 2x2 slots on tablets and foldables only.
     fun syncEnabled(context: Context) {
         val pm = context.packageManager
         val wanted = if (SamsungLockWidgetLarge.supported(context)) {

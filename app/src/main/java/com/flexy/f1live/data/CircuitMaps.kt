@@ -8,31 +8,14 @@ import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.OkHttpClient
 import java.net.URLEncoder
 
-/**
- * Track maps for a race weekend.
- *
- * The primary source is F1's own media CDN, which serves one transparent 16:9 PNG per circuit under
- * a fixed path. The `{Name}` segment is *not* derivable from the country: it is a hand-maintained
- * slug ("Baku" for Azerbaijan, "Great_Britain" for the UK, "USA" for Austin but "Miami" and
- * "Las_Vegas" for the other two American rounds). Every entry in [F1_MAP_NAMES] below was verified
- * to answer HTTP 200; anything not in the table returns null rather than a guess, because a wrong
- * guess is a 404 that Coil would silently show as a blank card. Sepang and Madrid have no map in this
- * set; both are covered by the per-season track set instead (see [f1OutlineUrl]).
- */
 object CircuitMaps {
 
     private const val F1_MAP_BASE =
         "https://media.formula1.com/image/upload/f_auto,c_limit,w_1440,q_auto/f_auto/q_auto/" +
             "content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/"
 
-    /** The F1 media CDN map for this weekend, or null when the CDN has no verified name for it. */
     fun f1MapUrl(weekend: RaceWeekend): String? = f1MapName(weekend)?.let { F1_MAP_BASE + it + "_Circuit" }
 
-    /**
-     * The `{Name}` slug for a weekend. Circuit-specific rules come first: two rounds can share a
-     * country (Barcelona and Madrid are both "Spain"; Miami, Austin and Las Vegas are all "USA")
-     * and only the circuit tells them apart.
-     */
     fun f1MapName(weekend: RaceWeekend): String? {
         val circuit = (weekend.circuitName + " " + weekend.locality + " " + weekend.name).lowercase()
         CIRCUIT_RULES.firstOrNull { (needle, _) -> circuit.contains(needle) }?.let { (_, name) ->
@@ -41,10 +24,6 @@ object CircuitMaps {
         return F1_MAP_NAMES[weekend.country.trim().lowercase()]
     }
 
-    /**
-     * Circuit-level overrides, matched against "circuitName locality raceName". An empty name means
-     * "the CDN has no map for this one" - Sepang and the Madring both answer 404.
-     */
     private val CIRCUIT_RULES: List<Pair<String, String>> = listOf(
         "madring" to "",
         "madrid" to "",
@@ -85,7 +64,6 @@ object CircuitMaps {
         "sakhir" to "Bahrain",
     )
 
-    /** Country (as Ergast spells it) -> verified CDN slug. */
     private val F1_MAP_NAMES: Map<String, String> = mapOf(
         "italy" to "Italy",
         "netherlands" to "Netherlands",
@@ -117,23 +95,12 @@ object CircuitMaps {
         "portugal" to "Portugal",
     )
 
-    /**
-     * F1's plain track outline - one clean line on transparency, no DRS zones, turn numbers or
-     * labels, and the current layout (the 2018 "Track icons" set still has the old Yas Marina,
-     * Singapore and Barcelona). Served per season as `{year}track{slug}`; seasons after the newest
-     * verified set reuse it. Null for circuits without a verified slug.
-     */
     fun f1OutlineUrl(weekend: RaceWeekend): String? {
         val slug = outlineSlug(weekend) ?: return null
         val year = outlineYear(weekend, slug)
         return "https://media.formula1.com/image/upload/f_png,w_640/common/f1/$year/track/${year}track$slug.png"
     }
 
-    /**
-     * F1's official detailed map from the same per-season track set: corner numbers, sector colours
-     * and the overtake/DRS markings on a transparent background (white track edge, so it reads on
-     * dark and light cards alike). Never tinted - the colours are the point. Null without a slug.
-     */
     fun f1DetailedMapUrl(weekend: RaceWeekend): String? {
         val slug = outlineSlug(weekend) ?: return null
         val year = outlineYear(weekend, slug)
@@ -152,7 +119,6 @@ object CircuitMaps {
     private const val OUTLINE_FIRST_YEAR = 2025
     private const val OUTLINE_LATEST_YEAR = 2026
 
-    /** Slugs that only exist from a later track set: older seasons borrow that first drawing. */
     private val OUTLINE_SLUG_FIRST_YEAR: Map<String, Int> = mapOf(
         "kualalumpur" to 2026,
         "madring" to 2026,
@@ -163,9 +129,7 @@ object CircuitMaps {
         return weekend.season.coerceIn(first, OUTLINE_LATEST_YEAR)
     }
 
-    /** "circuitName locality raceName" needle -> outline slug; every slug answered HTTP 200. */
     private val OUTLINE_RULES: List<Pair<String, String>> = listOf(
-        // F1 files Sepang under the nearest city.
         "sepang" to "kualalumpur",
         "malaysia" to "kualalumpur",
         "madring" to "madring",
@@ -218,14 +182,8 @@ object CircuitMaps {
         "monte carlo" to "montecarlo",
     )
 
-    /** Number of corners of the circuit's current layout, or null when not in the table. */
     fun turnsOf(weekend: RaceWeekend): Int? = outlineSlug(weekend)?.let { TURNS[it] }
 
-    /**
-     * Corners per outline slug, as formula1.com's circuit pages count them for the current layouts
-     * (Albert Park after 2022, Barcelona without the chicane, Marina Bay after 2023, Yas Marina
-     * after 2021). A circuit missing here shows no count rather than a guess.
-     */
     private val TURNS: Map<String, Int> = mapOf(
         "melbourne" to 14,
         "shanghai" to 16,
@@ -255,10 +213,8 @@ object CircuitMaps {
         "kualalumpur" to 15,
     )
 
-    /** Cache key for a resolved map URL. */
     fun key(weekend: RaceWeekend): String = "${weekend.season}_${weekend.round}"
 
-    /** `https://en.wikipedia.org/wiki/Circuit_Zandvoort` -> `Circuit_Zandvoort`. */
     fun wikiTitleOf(url: String?): String? {
         val marker = "/wiki/"
         val index = url?.indexOf(marker) ?: return null
@@ -271,7 +227,6 @@ object CircuitMaps {
         "https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&pithumbsize=1200" +
             "&format=json&titles=" + URLEncoder.encode(title, "UTF-8")
 
-    /** `query.pages.*.thumbnail.source` out of the pageimages response. */
     fun parseWikiThumbnail(root: JsonObject): String? {
         val pages = root["query"] as? JsonObject ?: return null
         val byId = pages["pages"] as? JsonObject ?: return null
@@ -284,10 +239,6 @@ object CircuitMaps {
     }
 }
 
-/**
- * Resolves and remembers one map URL per weekend: the F1 CDN slug when there is one, otherwise the
- * circuit's Wikipedia page image (one API call, then cached on disk forever).
- */
 class CircuitMapResolver(
     private val http: OkHttpClient,
     private val store: CircuitMapStore,
@@ -296,7 +247,6 @@ class CircuitMapResolver(
     private val mutex = Mutex()
     private var memory: MutableMap<String, String>? = null
 
-    /** Non-suspending peek for Compose: the CDN URL is free, a cached Wikipedia one is too. */
     fun cached(weekend: RaceWeekend): String? =
         CircuitMaps.f1MapUrl(weekend) ?: memory?.get(CircuitMaps.key(weekend))
 
@@ -324,7 +274,6 @@ class CircuitMapResolver(
     }
 
     private companion object {
-        /** Wikipedia rejects anonymous clients; identify the app as their policy asks. */
         const val WIKI_USER_AGENT = "Laply/1.0 (Android; +https://github.com/Spottq/Laply)"
     }
 }

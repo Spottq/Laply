@@ -29,11 +29,6 @@ import kotlin.math.roundToInt
 
 private const val ICON_BASE = "https://www.gstatic.com/weather/conditions/v2/svg/"
 
-/**
- * Google Weather's condition icon for a WMO weather code (as Open-Meteo reports it) - the scalloped
- * sun and outlined clouds of Google's weather pages - in its light or dark drawing to match the
- * theme. Coil fetches the SVG once and keeps it in its disk cache.
- */
 @Composable
 fun WeatherIcon(
     code: Int?,
@@ -53,7 +48,6 @@ fun WeatherIcon(
 fun weatherIconUrl(code: Int?, isDay: Boolean, dark: Boolean): String =
     ICON_BASE + weatherIconName(code, isDay) + if (dark) "_dark.svg" else "_light.svg"
 
-/** WMO weather interpretation code -> the name of Google's condition icon. */
 internal fun weatherIconName(code: Int?, isDay: Boolean): String = when (code) {
     0 -> if (isDay) "sunny" else "clear_night"
     1 -> if (isDay) "mostly_sunny" else "mostly_clear_night"
@@ -71,7 +65,6 @@ internal fun weatherIconName(code: Int?, isDay: Boolean): String = when (code) {
     else -> "cloudy"
 }
 
-/** What the icon shows, for screen readers. */
 @StringRes
 fun weatherLabel(code: Int?): Int = when (code) {
     0, 1 -> R.string.weather_clear
@@ -84,13 +77,11 @@ fun weatherLabel(code: Int?): Int = when (code) {
     else -> R.string.weather_overcast
 }
 
-/** "27°", or a dash when the forecast has no temperature. */
 fun formatDegrees(celsius: Double?): String = celsius?.let { it.roundToInt().toString() + "°" } ?: "–"
 
 private const val RAIN_LIKELY_PCT = 40
 private val RainBlue = Color(0xFF3D8BFD)
 
-/** A drop and a percentage; blue once rain is a real prospect. */
 @Composable
 fun RainChance(pct: Int, modifier: Modifier = Modifier, quietColor: Color = LocalContentColor.current) {
     val tint = if (pct >= RAIN_LIKELY_PCT) RainBlue else quietColor

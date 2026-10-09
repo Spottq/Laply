@@ -20,27 +20,11 @@ import okhttp3.OkHttpClient
 import java.io.IOException
 import kotlin.math.abs
 
-/**
- * The classification of a session that is already over.
- *
- * Lookup order is disk first, network second, and whatever the network produced goes straight back
- * to disk: a finished session is immutable, so an entry is written once and never refreshed. That
- * also keeps the app well inside the Jolpica budget (4 req/s, 500 req/h) - nothing here ever polls.
- *
- * Two upstreams, picked by session kind:
- *
- *  * race, sprint and qualifying come from Jolpica (`/{season}/{round}/results.json`,
- *    `/sprint.json`, `/qualifying.json`) - full classification with statuses, laps, fastest lap and
- *    the Q1/Q2/Q3 split;
- *  * practice and sprint qualifying have no Ergast endpoint, so they come from the ESPN
- *    competition for that session, mapped by the same [EspnMapper] the live fallback uses.
- */
 class SessionResultsRepository(
     private val http: OkHttpClient,
     private val store: SessionResultsStore,
     private val jolpicaBaseUrl: String = JolpicaScheduleRepository.DEFAULT_BASE_URL,
     private val nowMillis: () -> Long = System::currentTimeMillis,
-    /** Called with every state that lands in the cache, so headshots can be pre-warmed. */
     private val onResults: (LiveSessionState) -> Unit = {},
 ) {
 
@@ -73,7 +57,6 @@ class SessionResultsRepository(
         if (document != null) {
             jolpica(weekend, session, document)?.let { if (it.state.drivers.isNotEmpty()) return it }
         }
-        // Practice, sprint qualifying, and anything Ergast has not published yet.
         return espn(weekend, session)?.let { SessionResults(it, null) }
     }
 
@@ -103,9 +86,6 @@ class SessionResultsRepository(
         val competition = pickCompetition(scoreboard, weekend, session) ?: return@coroutineScope null
         if (competition.athletes.isEmpty()) return@coroutineScope null
 
-        // The competitors list and the per-driver statistics go out together: the statistics URLs
-        // are derivable from the scoreboard's competitor ids, so they need not queue behind the
-        // list, and only scoreboard drivers are fetched because buildState maps nobody else.
         val vehiclesJob = async {
             runCatching {
                 EspnMapper.parseCompetitors(
@@ -151,7 +131,6 @@ class SessionResultsRepository(
         )
     }
 
-    /** The competition of the requested kind inside the ESPN event that is this weekend. */
     private fun pickCompetition(
         scoreboard: List<EspnMapper.Competition>,
         weekend: RaceWeekend,
@@ -178,7 +157,6 @@ class SessionResultsRepository(
     private fun sameStartDay(a: Long?, b: Long?): Boolean =
         a != null && b != null && abs(a - b) <= DAY_MS
 
-    /** A cached state has lost the rank-1 marker; the best lap of the session is the next best clue. */
     private fun fastestLapNumberOf(state: LiveSessionState): String? {
         if (state.sessionKind != SessionKind.RACE && state.sessionKind != SessionKind.SPRINT) return null
         return state.drivers
@@ -190,7 +168,6 @@ class SessionResultsRepository(
     private companion object {
         const val JOLPICA_USER_AGENT = "Laply/1.0 (Android; +https://github.com/Spottq/Laply)"
         const val ESPN_USER_AGENT = "Mozilla/5.0"
-        /** Two rounds for a 22-car field on ESPN's HTTP/1.1 API instead of five; see EspnLiveClient. */
         const val MAX_PARALLEL_REQUESTS = 16
         const val DAY_MS = 24L * 60 * 60 * 1000
         const val EVENT_MATCH_WINDOW_MS = 2 * DAY_MS
@@ -213,13 +190,11 @@ class SessionResultsRepository(
     }
 }
 
-/** A finished classification plus the racing number credited with the fastest lap, when known. */
 data class SessionResults(
     val state: LiveSessionState,
     val fastestLapRacingNumber: String?,
 )
 
-/** "1:12.271" / "58.912" -> milliseconds, for picking the quickest lap of a cached race. */
 internal fun lapMillis(value: String): Long {
     val trimmed = value.trim()
     if (trimmed.isEmpty()) return Long.MAX_VALUE
@@ -230,18 +205,12 @@ internal fun lapMillis(value: String): Long {
     return ((hours * 3600 + minutes * 60) * 1000) + (seconds * 1000).toLong()
 }
 
-/**
- * Ergast/Jolpica results JSON -> [LiveSessionState]. Pure and Android-free so the mapping is unit
- * tested against captured payloads.
- */
 object JolpicaResultsMapper {
 
     fun parse(body: String, session: ScheduledSession, nowUtcMillis: Long): LiveSessionState? {
         val race = LenientJson.decodeFromString<ErgastResultsResponse>(body)
             .data.raceTable.races.firstOrNull() ?: return null
         val finishers = race.results.ifEmpty { race.sprintResults }
-        // The winner's distance: everyone below it is a lap (or more) down, which is what the
-        // classification shows instead of a meaningless time gap.
         val raceLaps = finishers.mapNotNull { it.laps?.toIntOrNull() }.maxOrNull() ?: 0
         val classification = when {
             race.qualifyingResults.isNotEmpty() -> race.qualifyingResults.map(::qualifyingTiming)
@@ -274,7 +243,6 @@ object JolpicaResultsMapper {
         )
     }
 
-    /** Racing number of whoever set the fastest lap (`FastestLap.rank == "1"`), else null. */
     fun fastestLapRacingNumber(body: String): String? {
         val race = runCatching {
             LenientJson.decodeFromString<ErgastResultsResponse>(body).data.raceTable.races.firstOrNull()
@@ -284,11 +252,6 @@ object JolpicaResultsMapper {
         return racingNumberOf(fastest.number, fastest.driver)
     }
 
-    /**
-     * Who saw the flag. Ergast says "Finished" and "+1 Lap"; Jolpica also says "Lapped" for a car
-     * that is classified but a lap or more down - none of those is a retirement, and only a real
-     * retirement ("Collision", "Engine", "Accident") should dim the row.
-     */
     fun isClassifiedStatus(status: String): Boolean {
         val value = status.trim()
         return value.startsWith("Finished", ignoreCase = true) ||
@@ -308,13 +271,9 @@ object JolpicaResultsMapper {
         val lapsDown = if (raceLaps > 0 && laps in 1 until raceLaps) raceLaps - laps else 0
         return baseTiming(dto).copy(
             position = position,
-            // The winner's cell reads "Leader", so their race time goes where the row keeps its
-            // secondary time.
             lastLapTime = if (position == 1) total else "",
             gapToLeader = when {
                 position == 1 -> ""
-                // A car that is laps down gets the deficit, not the (meaningless) time gap that
-                // Jolpica still publishes for it.
                 lapsDown > 0 && classified -> "+" + lapsDown + if (lapsDown == 1) " Lap" else " Laps"
                 else -> total.ifBlank { status }
             },
@@ -340,13 +299,10 @@ object JolpicaResultsMapper {
             teamColorHex = constructorColorHex(dto.constructor?.constructorId),
             headshotUrl = DriverHeadshots.forTla(tla),
             countryCode = driverCountryCode(tla, dto.driver?.nationality),
-            // Best of Q3, Q2, Q1 - a driver knocked out in Q1 only ever set a Q1 time.
             bestLapTime = parts.lastOrNull { it.isNotBlank() }.orEmpty(),
             lastLapTime = "",
             gapToLeader = "",
             interval = "",
-            // The three parts ride in the sector slots so the existing expandable row shows them;
-            // the results screen relabels the columns Q1/Q2/Q3.
             sectors = parts.map { SectorTiming(it, personalFastest = false, overallFastest = false) },
             inPit = false,
             pitOut = false,

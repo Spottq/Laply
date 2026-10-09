@@ -58,15 +58,9 @@ import com.flexy.f1live.widget.WidgetColors
 import com.flexy.f1live.widget.glassBackground
 import java.util.Locale
 
-/** The three standings entries in the widget picker. */
 enum class StandingsWidgetKind {
-    /** The drivers' table. */
     Drivers,
-
-    /** The constructors' table. */
     Teams,
-
-    /** The leader of the drivers' championship and the gaps behind them. */
     Leader;
 
     val receiver: Class<out GlanceAppWidgetReceiver>
@@ -101,11 +95,6 @@ class TeamStandingsWidget : StandingsWidget(StandingsWidgetKind.Teams)
 
 class TitleFightWidget : StandingsWidget(StandingsWidgetKind.Leader)
 
-/**
- * Size classes of the standings widgets, as the smallest size each layout needs (see WidgetSizes
- * for how cells map to dp). Narrower than [WideWidth] the tables use driver codes and the title
- * fight stacks into one column.
- */
 object StandingsWidgetSizes {
     val WideWidth = 250.dp
 
@@ -118,24 +107,17 @@ object StandingsWidgetSizes {
     val all: Set<DpSize> = setOf(Medium, MediumTall, Large, LargeTall, LargeTallest)
 }
 
-/**
- * One standings widget: composed for its exact size, with as many rows as that size holds. The
- * table and the colours come from [StandingsWidgetUpdater]; a tap opens the Standings tab.
- */
 abstract class StandingsWidget(private val kind: StandingsWidgetKind) : GlanceAppWidget() {
 
     override val sizeMode: SizeMode = SizeMode.Exact
 
-    /** Previews have no exact size (there is no widget yet): the picker gets the size classes. */
     override val previewSizeMode = SizeMode.Responsive(StandingsWidgetSizes.all)
 
-    /** Nothing per widget to store: every instance shows the same table. */
     override val stateDefinition: GlanceStateDefinition<*>? = null
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val initial = StandingsWidgetUpdater.current(context)
         provideContent {
-            // A refresh while this session is still running arrives through the flow.
             val latest by StandingsWidgetUpdater.snapshot.collectAsState()
             StandingsContent(kind, latest ?: initial)
         }
@@ -152,34 +134,26 @@ abstract class StandingsWidget(private val kind: StandingsWidgetKind) : GlanceAp
 private val HorizontalPadding = 14.dp
 private val VerticalPadding = 12.dp
 
-/** Between the overline and the first row. */
 private val HeaderGap = 6.dp
 
-/** A table row at the least, and at the most when the height is shared out between the rows. */
 private val TableRowHeight = 22.dp
 private val TableRowMaxHeight = 30.dp
 
-/** The position column, right-aligned so "9" and "10" line up. */
 private val PositionWidth = 20.dp
 
-/** The title-fight tiles: their height, the gap between two, the dashed line between them. */
 private val TileHeight = 32.dp
 private val TileGap = 5.dp
 private val TileLineHeight = 10.dp
 
-/** Tiles in the title fight's column at most (a Glance Column holds 10 children; one is the line). */
 private const val MAX_TILES = 8
 
-/** Rows per Glance Column: it holds at most 10 children. */
 private const val COLUMN_CHILDREN = 10
 
-/** Below this height the 4x2 title fight leaves out the line under the leader's points. */
 private val LeaderFooterMinHeight = 150.dp
 
 @Composable
 private fun StandingsContent(kind: StandingsWidgetKind, snapshot: StandingsSnapshot) {
     val context = LocalContext.current
-    // The blurred glass only where One UI Home hosts the widget, as for the session widget.
     val glass = snapshot.glass?.takeIf { OneUi.isOneUiHomeHost(LocalAppWidgetOptions.current) }
     val colors = if (glass != null) {
         WidgetColors.glass(glass.tone, snapshot.dynamicColor)
@@ -197,7 +171,6 @@ private fun StandingsContent(kind: StandingsWidgetKind, snapshot: StandingsSnaps
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
     if (glass != null) {
-        // The glass layer is a plain layout of ours under the content, see F1Widget.
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -234,11 +207,6 @@ private fun StandingsBody(kind: StandingsWidgetKind, snapshot: StandingsSnapshot
     }
 }
 
-/**
- * The table: overline ("DRIVERS · AFTER R20", and on wide widgets the points left), then as many
- * rows as fit - position, team colour, name, points - with the dashed title line after the last
- * one who can still win. The height left over is shared out between the rows.
- */
 @Composable
 private fun TableLayout(kind: StandingsWidgetKind, snapshot: StandingsSnapshot, colors: WidgetColors) {
     val context = LocalContext.current
@@ -305,7 +273,6 @@ private fun TableLayout(kind: StandingsWidgetKind, snapshot: StandingsSnapshot, 
     }
 }
 
-/** [entries] as table rows, ten to a Column. */
 @Composable
 private fun TableRows(entries: List<StandingsEntry>, wide: Boolean, rowHeight: Dp, colors: WidgetColors) {
     entries.chunked(COLUMN_CHILDREN).forEach { chunk ->
@@ -344,7 +311,6 @@ private fun TableRow(entry: StandingsEntry, wide: Boolean, height: Dp, colors: W
     }
 }
 
-/** The title fight: the leader, big, and the drivers chasing them with their gaps. */
 @Composable
 private fun LeaderLayout(snapshot: StandingsSnapshot, colors: WidgetColors) {
     if (LocalSize.current.width >= StandingsWidgetSizes.WideWidth) {
@@ -354,7 +320,6 @@ private fun LeaderLayout(snapshot: StandingsSnapshot, colors: WidgetColors) {
     }
 }
 
-/** 4x2 and up: the leader's card on the left, the chasers as tiles on the right. */
 @Composable
 private fun WideLeader(snapshot: StandingsSnapshot, colors: WidgetColors) {
     val context = LocalContext.current
@@ -394,10 +359,6 @@ private fun WideLeader(snapshot: StandingsSnapshot, colors: WidgetColors) {
     }
 }
 
-/**
- * The chasers as tiles, as many as the height holds, with the dashed line after the last one who
- * can still win. No line when nobody can: the leader's footer says the title is decided.
- */
 @Composable
 private fun ChaserTiles(
     leader: StandingsEntry,
@@ -408,13 +369,11 @@ private fun ChaserTiles(
     colors: WidgetColors,
 ) {
     val tileHeight = maxOf(TileHeight, textLine(13f, fontScale) + 10.dp)
-    // Every tile but the first comes with the gap above it, hence the gap added to both.
     val plan = StandingsWidgetPlanner.tablePlan(
         space = (space + TileGap).value,
         rowHeight = (tileHeight + TileGap).value,
         lineHeight = TileLineHeight.value,
         entries = chasers.size,
-        // The leader is the first contender.
         contenders = fight?.contenders?.minus(1)?.takeIf { it > 0 },
         maxRows = MAX_TILES,
     )
@@ -423,7 +382,7 @@ private fun ChaserTiles(
         if (index == lineAfter) {
             TitleLine(captioned = false, decided = false, height = TileLineHeight, colors = colors)
         }
-        // The gap is the top padding of a wrapper, not a Spacer, to stay within 10 children.
+        // Padding, not a Spacer: a Glance Column holds at most 10 children.
         val gap = if (index == 0 || index == lineAfter) 0.dp else TileGap
         Box(modifier = GlanceModifier.fillMaxWidth().padding(top = gap)) {
             ChaserTile(leader, entry, tileHeight, colors)
@@ -450,14 +409,12 @@ private fun ChaserTile(leader: StandingsEntry, entry: StandingsEntry, height: Dp
     }
 }
 
-/** 2x2: the leader over their points, and the nearest chasers on one line ("NOR −22 · VER −83"). */
 @Composable
 private fun NarrowLeader(snapshot: StandingsSnapshot, colors: WidgetColors) {
     val context = LocalContext.current
     val size = LocalSize.current
     val leader = snapshot.drivers.first()
     val chasers = snapshot.drivers.drop(1)
-    // About 72 dp per chaser on that line.
     val inline = ((size.width - 24.dp) / 72.dp).toInt().coerceIn(1, 3)
 
     Column(modifier = GlanceModifier.fillMaxSize().padding(12.dp)) {
@@ -480,7 +437,6 @@ private fun NarrowLeader(snapshot: StandingsSnapshot, colors: WidgetColors) {
     }
 }
 
-/** "324 pts", the number big in the accent colour. */
 @Composable
 private fun LeaderPoints(leader: StandingsEntry, colors: WidgetColors, size: TextUnit) {
     val context = LocalContext.current
@@ -492,7 +448,6 @@ private fun LeaderPoints(leader: StandingsEntry, colors: WidgetColors, size: Tex
             color = colors.onSurfaceVariant,
             size = 13.sp,
             weight = FontWeight.Medium,
-            // Roughly on the big number's baseline: its line has more room under the digits.
             modifier = GlanceModifier.padding(bottom = 4.dp),
         )
     }
@@ -513,10 +468,6 @@ private fun EmptyLayout(colors: WidgetColors) {
 
 // ================================================================== pieces
 
-/**
- * The dashed title line, as in the app's standings: captioned in the middle on wide widgets,
- * "Title decided" when only the leader is left above it.
- */
 @Composable
 private fun TitleLine(captioned: Boolean, decided: Boolean, height: Dp, colors: WidgetColors) {
     val context = LocalContext.current
@@ -539,7 +490,6 @@ private fun TitleLine(captioned: Boolean, decided: Boolean, height: Dp, colors: 
     }
 }
 
-/** A stretch of dashed rule: a tinted line shape, since Glance cannot draw one itself. */
 @Composable
 private fun Dash(colors: WidgetColors, modifier: GlanceModifier) {
     Image(
@@ -552,7 +502,6 @@ private fun Dash(colors: WidgetColors, modifier: GlanceModifier) {
     )
 }
 
-/** The team's colour as a short upright bar, like the app's livery accents. */
 @Composable
 private fun TeamStripe(entry: StandingsEntry) {
     Box(
@@ -564,7 +513,6 @@ private fun TeamStripe(entry: StandingsEntry) {
     )
 }
 
-/** One line of text, ellipsized. */
 @Composable
 private fun WText(
     text: String,
@@ -585,21 +533,17 @@ private fun WText(
 
 // ================================================================== text
 
-/** Generous line height for [sp] text at [fontScale] (One UI and Google Sans run tall). */
 private fun textLine(sp: Float, fontScale: Float): Dp = (sp * 1.4f * fontScale).dp
 
-/** "after R20" on wide widgets, "R20" on narrow ones, the season before its first round. */
 private fun roundLabel(context: Context, snapshot: StandingsSnapshot, wide: Boolean): String = when {
     snapshot.round <= 0 -> snapshot.season.toString()
     wide -> context.getString(R.string.standings_widget_after_round, snapshot.round)
     else -> context.getString(R.string.standings_widget_round, snapshot.round)
 }
 
-/** "DRIVERS · AFTER R20". */
 internal fun overline(context: Context, @StringRes label: Int, snapshot: StandingsSnapshot, wide: Boolean): String =
     (context.getString(label) + " · " + roundLabel(context, snapshot, wide)).uppercase(Locale.getDefault())
 
-/** "LEADER · AFTER R20", or "CHAMPION · 2026" once the season is over. */
 internal fun leaderOverline(context: Context, snapshot: StandingsSnapshot, fight: TitleFight?, wide: Boolean): String {
     val text = if (fight != null && fight.pointsLeft == 0) {
         context.getString(R.string.standings_widget_champion) + " · " + snapshot.season
@@ -609,21 +553,18 @@ internal fun leaderOverline(context: Context, snapshot: StandingsSnapshot, fight
     return text.uppercase(Locale.getDefault())
 }
 
-/** "108 pts to play for", or "Final" once the season is over; nothing without a calendar. */
 private fun fightDetail(context: Context, fight: TitleFight?): String? = when {
     fight == null -> null
     fight.pointsLeft == 0 -> context.getString(R.string.standings_widget_final)
     else -> fight.pointsLeftText
 }
 
-/** Under the leader's points: what is left to race for, or that nobody can catch them any more. */
 internal fun leaderFooter(context: Context, fight: TitleFight?): String? = when {
     fight == null || fight.pointsLeft == 0 -> null
     fight.decided -> context.getString(R.string.standings_widget_title_decided)
     else -> fight.pointsLeftText
 }
 
-/** "McLaren · 7 wins", or just the team before a first win. */
 private fun leaderTeam(context: Context, leader: StandingsEntry): String =
     if (leader.wins > 0) {
         leader.team + " · " + context.resources.getQuantityString(R.plurals.standings_widget_wins, leader.wins, leader.wins)

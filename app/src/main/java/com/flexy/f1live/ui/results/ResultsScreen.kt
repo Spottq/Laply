@@ -52,10 +52,6 @@ import com.flexy.f1live.ui.components.formatDate
 import com.flexy.f1live.ui.components.plusHorizontal
 import com.flexy.f1live.ui.theme.F1LivePreviewTheme
 
-/**
- * A finished session opened from the schedule: track map on top, then the same classification the
- * Live screen draws. A detail screen, so it owns a back arrow and the toolbar stays hidden.
- */
 @Composable
 fun ResultsScreen(
     season: Int,
@@ -134,7 +130,6 @@ fun ResultsContent(
                 contentPadding = innerPadding,
             )
 
-            // Large screens: one centred column instead of rows stretched edge to edge.
             else -> CenteredColumn { gutter ->
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -146,7 +141,6 @@ fun ResultsContent(
                     val weekend = uiState.weekend
                     if (weekend != null) {
                         item(key = "map", contentType = "map") {
-                            // F1's clean outline; mapUrl only ever fills in for a circuit without one.
                             val circuit = remember(weekend, uiState.mapUrl) {
                                 CircuitOutline.of(weekend, uiState.mapUrl)
                             }
@@ -234,7 +228,6 @@ private fun subtitleOf(uiState: ResultsUiState): String {
     return session.name + " · " + date
 }
 
-/** "Race · 53 laps · winner 1:32:03.897" / "Qualifying · Q3". */
 private fun legendOf(uiState: ResultsUiState): String {
     val session = uiState.session ?: return ""
     val parts = mutableListOf(session.name)

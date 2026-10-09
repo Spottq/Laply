@@ -12,24 +12,11 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-/**
- * Writes every finished classification the live feeds produce to disk.
- *
- * Two destinations: `last_session`, which the Live tab paints at start-up before any socket is
- * open, and `{season}_{round}_{kind}`, which the schedule reads when the user opens a past session.
- * The round is resolved by matching the feed's meeting against the season calendar - the feeds
- * publish a name and a country, never a round number.
- *
- * The feed re-emits a finished session every few seconds and each write is a file rename, so writes
- * are conflated: [pending] holds only the newest candidate, and the writer sleeps
- * [minWriteIntervalMs] after each save. Identical content is never written twice.
- */
 class SessionPersister(
     private val scope: CoroutineScope,
     private val results: SessionResultsStore,
     private val last: LastSessionStore,
     private val schedule: ScheduleRepository,
-    /** Called after a save, so headshots and flags can be pulled into the image cache. */
     private val onSaved: (LiveSessionState) -> Unit = {},
     private val minWriteIntervalMs: Long = MIN_WRITE_INTERVAL_MS,
     private val nowMillis: () -> Long = System::currentTimeMillis,
@@ -37,7 +24,6 @@ class SessionPersister(
 
     private val pending = MutableStateFlow<LiveSessionState?>(null)
 
-    /** Content of the last save, with the volatile fields zeroed; guards against no-op writes. */
     private var savedFingerprint: LiveSessionState? = null
 
     fun attach(states: Flow<LiveSessionState>) {
@@ -50,8 +36,6 @@ class SessionPersister(
                 if (fingerprint == savedFingerprint) return@collect
                 savedFingerprint = fingerprint
                 save(candidate)
-                // A conflated StateFlow drops everything that arrives while we sleep except the
-                // newest value, which is exactly the debounce we want.
                 delay(minWriteIntervalMs)
             }
         }
@@ -66,7 +50,6 @@ class SessionPersister(
         onSaved(stored)
     }
 
-    /** Season and round of the weekend this state belongs to, matched against the calendar. */
     private suspend fun resolveRound(state: LiveSessionState): Pair<Int, Int>? {
         if (state.sessionKind == SessionKind.UNKNOWN) return null
         val season = Calendar.getInstance().apply { timeInMillis = nowMillis() }.get(Calendar.YEAR)
@@ -85,7 +68,6 @@ class SessionPersister(
         val locationMatches = location.isNotEmpty() &&
             weekend.locality.trim().equals(location, ignoreCase = true)
         if (!countryMatches && !locationMatches) return false
-        // Two rounds can share a country (Spain, the USA); the session must be inside the weekend.
         val start = weekend.sessions.mapNotNull { it.startUtcMillis }.minOrNull() ?: return countryMatches
         val end = weekend.sessions.mapNotNull { it.startUtcMillis }.maxOrNull() ?: return countryMatches
         val stamp = state.lastUpdateUtcMillis.takeIf { it > 0 } ?: nowMillis()
@@ -95,7 +77,6 @@ class SessionPersister(
     private companion object {
         const val MIN_WRITE_INTERVAL_MS = 5_000L
 
-        /** A finished session is still "this weekend" for a few days either side. */
         const val WEEKEND_WINDOW_MS = 3L * 24 * 60 * 60 * 1000
 
         fun isSaveable(state: LiveSessionState): Boolean =
@@ -104,7 +85,6 @@ class SessionPersister(
                 else -> false
             }
 
-        /** Everything that identifies the content, minus the fields that tick on every poll. */
         fun fingerprintOf(state: LiveSessionState): LiveSessionState =
             state.copy(isConnected = false, lastUpdateUtcMillis = 0L)
     }

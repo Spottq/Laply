@@ -19,10 +19,6 @@ import java.util.Calendar
 
 enum class StandingsTab { Drivers, Constructors }
 
-/**
- * The table a standings widget asked for: set by MainActivity before it opens the Standings tab,
- * taken once by the screen's view model, so a later visit keeps the tab the user picked.
- */
 object StandingsTabRequests {
     private val pending = MutableStateFlow<StandingsTab?>(null)
 
@@ -43,27 +39,18 @@ data class StandingsUiState(
     val round: Int = 0,
     val drivers: List<DriverStanding> = emptyList(),
     val constructors: List<ConstructorStanding> = emptyList(),
-    /** True while the table on screen came from disk and the network has not confirmed it. */
     val fromCache: Boolean = false,
     val error: String? = null,
-    /** Null until the calendar is in, or when it does not fit the standings. */
     val titleFight: TitleFight? = null,
-    /** The same for the constructors' championship. */
     val constructorsFight: TitleFight? = null,
 ) {
     val isEmpty: Boolean get() = drivers.isEmpty() && constructors.isEmpty()
 
-    /**
-     * How many drivers sit above the "out of reach" line, or null for no line: everyone can still
-     * win, or there is no calendar to tell.
-     */
     val titleCut: Int? get() = titleFight?.contenders?.takeIf { it in 1 until drivers.size }
 
-    /** The same line in the constructors' table. */
     val constructorsCut: Int?
         get() = constructorsFight?.contenders?.takeIf { it in 1 until constructors.size }
 
-    /** Leader's points, used to size the gap bars. Never zero, so the bars can divide by it. */
     val driverLeaderPoints: Double get() = drivers.firstOrNull()?.points?.takeIf { it > 0 } ?: 1.0
 
     val constructorLeaderPoints: Double
@@ -92,11 +79,6 @@ class StandingsViewModel : ViewModel() {
         _uiState.update { if (it.tab == tab) it else it.copy(tab = tab) }
     }
 
-    /**
-     * Two steps on purpose: whatever is on disk goes on screen immediately - offline that is the
-     * whole answer - and the network then refreshes it. A failed refresh leaves the stored table
-     * in place with the "offline" caption rather than replacing it with an error.
-     */
     private fun load(refresh: Boolean) {
         viewModelScope.launch {
             _uiState.update {
@@ -130,8 +112,6 @@ class StandingsViewModel : ViewModel() {
                 },
             )
 
-            // After the table, not before it: on a first launch the calendar may need the network
-            // too, and the standings should not wait for it.
             val weekends = Graph.schedule.getSeason(season).getOrNull().orEmpty()
             val now = System.currentTimeMillis()
             _uiState.update {

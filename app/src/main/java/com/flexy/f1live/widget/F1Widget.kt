@@ -61,25 +61,13 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** Base of the home-screen widget receivers, all running the same size-adaptive [F1Widget]. */
 abstract class F1WidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = F1Widget()
 }
 
-/**
- * The one "Laply" entry in the widget picker: 4x2 by default, resizable from 2x1 up, and laid
- * out for whatever size it is given. (The class keeps its first name so widgets already placed
- * with it survive app updates.)
- */
+// Keeps its first name so widgets already placed with it survive app updates.
 class NextSessionWidgetReceiver : F1WidgetReceiver()
 
-/**
- * Size classes, as the smallest size each layout needs. The values follow the platform sizing
- * table (a cell is roughly 73 dp wide in portrait and 66-118 dp tall): 2 cells are >= 110 dp wide,
- * 4 cells >= 250 dp; 1 row is >= 40 dp tall, 2 rows >= 110 dp. The widget itself is composed for
- * its exact size ([SizeMode.Exact]) and picks its layout with these thresholds; the widget-picker
- * previews, which have no exact size, are rendered at these sizes.
- */
 object WidgetSizes {
     val Small = DpSize(110.dp, 40.dp)
     val SmallTall = DpSize(110.dp, 72.dp)
@@ -98,23 +86,15 @@ object WidgetSizes {
 
 class F1Widget : GlanceAppWidget() {
 
-    /**
-     * Exact: [LocalSize] is the real size of the widget (portrait and landscape, on every resize).
-     * Type stays the same size everywhere, like any Material widget; what adapts to the launcher's
-     * cells is how many sessions are listed and how the height is shared between them.
-     */
     override val sizeMode: SizeMode = SizeMode.Exact
 
-    /** Previews have no exact size (there is no widget yet): the picker gets the size classes. */
     override val previewSizeMode = SizeMode.Responsive(WidgetSizes.all)
 
-    /** Nothing per-widget to store: every instance shows the same calendar. */
     override val stateDefinition: GlanceStateDefinition<*>? = null
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val initial = WidgetUpdater.current(context)
         provideContent {
-            // A refresh while this session is still running arrives through the flow.
             val latest by WidgetUpdater.snapshot.collectAsState()
             WidgetContent(latest ?: initial)
         }
@@ -131,15 +111,12 @@ class F1Widget : GlanceAppWidget() {
 private val FlagSmall = DpSize(18.dp, 13.dp)
 private val FlagMedium = DpSize(24.dp, 17.dp)
 
-/** Session tiles of the lists: two-line and one-line height, and the gap between tiles. */
 private val RowHeightTwoLine = 46.dp
 private val RowHeightOneLine = 34.dp
 private val RowGap = 3.dp
 
-/** Most tiles one list shows: a Glance Column holds at most 10 children. */
 private const val MAX_LIST_ROWS = 10
 
-/** The leftover height is shared out between the tiles, up to this much space between two. */
 private val RowGapMax = 12.dp
 
 
@@ -147,8 +124,6 @@ private val RowGapMax = 12.dp
 @Composable
 private fun WidgetContent(snapshot: WidgetSnapshot) {
     val context = LocalContext.current
-    // The blurred glass only where One UI Home hosts this widget: elsewhere it would just be
-    // see-through, so any other launcher (and the picker preview) gets the opaque widget.
     val glass = snapshot.glass?.takeIf { OneUi.isOneUiHomeHost(LocalAppWidgetOptions.current) }
     val colors = if (glass != null) {
         WidgetColors.glass(glass.tone, snapshot.dynamicColor)
@@ -160,11 +135,7 @@ private fun WidgetContent(snapshot: WidgetSnapshot) {
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
     if (glass != null) {
-        // One UI Home finds the view with @android:id/background and blurs the wallpaper behind
-        // the widget when that view's own background is a translucent *shape* (a flat
-        // ColorDrawable only makes it see-through). Glance cannot give a view a drawable
-        // background of its own - an image background becomes a separate child view - so the
-        // background is a plain layout of ours, the first child, and the content sits on top.
+        // One UI blurs only behind a translucent shape on @android:id/background, which Glance can't make.
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -179,13 +150,10 @@ private fun WidgetContent(snapshot: WidgetSnapshot) {
             modifier = GlanceModifier
                 .fillMaxSize()
                 .appWidgetBackground()
-                // One root background view: a rounded shape drawable tinted with the background
-                // colour.
                 .background(
                     imageProvider = ImageProvider(R.drawable.widget_background),
                     colorFilter = ColorFilter.tint(colors.background.provider),
                 )
-                // Also clips the circuit decoration to the rounded corners.
                 .cornerRadius(android.R.dimen.system_app_widget_background_radius)
                 .clickable(actionStartActivity(open)),
         ) {
@@ -194,17 +162,12 @@ private fun WidgetContent(snapshot: WidgetSnapshot) {
     }
 }
 
-/** Everything inside the widget's background, for whichever root [WidgetContent] chose. */
 @Composable
 private fun WidgetBody(snapshot: WidgetSnapshot, colors: WidgetColors) {
     val size = LocalSize.current
     val wide = size.width >= WidgetSizes.Wide.width
     val large = wide && size.height >= WidgetSizes.Large.height
     val medium = !wide && size.height >= WidgetSizes.Medium.height
-    // The faint circuit is the first child, so it sits under the content without taking part in
-    // its layout: top-end in the 2x2 (its inset fills the bottom), bottom-end in the 4x1, and in
-    // the 2x1 the whole circuit at its end, clear of the text at the other side. The 4x2 draws
-    // the whole circuit in its card instead.
     if (snapshot.entries.isNotEmpty() && !large) {
         when {
             medium -> TrackDecoration(snapshot, DecorationCorner.TopEnd, colors, size.height * 0.5f)
@@ -221,12 +184,6 @@ private fun WidgetBody(snapshot: WidgetSnapshot, colors: WidgetColors) {
     }
 }
 
-/**
- * The glass background layer: widget_glass_background's rounded shape tinted white (light) or
- * near-black (dark) at the chosen alpha, following the system for [GlassStyle.tone] SYSTEM.
- * Tinting keeps it a shape drawable, which is what One UI blurs behind. Base 255 light / 16 dark
- * and alpha 1..254 as in twidget (MIT, (c) 2026 Josh Skinner). The standings widgets use it too.
- */
 internal fun glassBackground(context: Context, glass: GlassStyle): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.widget_glass_background)
     val alpha = glass.alpha.coerceIn(1, 254)
@@ -241,15 +198,10 @@ internal fun glassBackground(context: Context, glass: GlassStyle): RemoteViews {
     return views
 }
 
-/**
- * The whole circuit, muted, at the end of the 2x1, vertically centred with a margin all round: never cut, and kept to the end [ONE_ROW_OUTLINE_WIDTH] of the width so it
- * stays clear of the session and countdown text at the start. Nothing when the circuit
- * background is off or the widget is too short for it.
- */
 @Composable
 private fun EndOutline(snapshot: WidgetSnapshot, colors: WidgetColors, widget: DpSize) {
     val outline = snapshot.outline ?: return
-    if (snapshot.decorations.isEmpty()) return // "Circuit background" off
+    if (snapshot.decorations.isEmpty()) return
     val aspect = outline.width.toFloat() / outline.height.coerceAtLeast(1)
     val margin = 8.dp
     val height = minOf(widget.height - margin * 2, widget.width * ONE_ROW_OUTLINE_WIDTH / aspect)
@@ -266,14 +218,8 @@ private fun EndOutline(snapshot: WidgetSnapshot, colors: WidgetColors, widget: D
     }
 }
 
-/** Share of the 2x1's width the end outline may take. */
 private const val ONE_ROW_OUTLINE_WIDTH = 0.4f
 
-/**
- * The faint circuit behind the content, pinned to [corner] and running off its two edges (the
- * bitmap is pre-cropped that way, see [WidgetUpdater]): [height] tall, or less when that would make
- * it wider than [maxWidth]. Nothing when the setting is off or the circuit has no outline.
- */
 @Composable
 private fun TrackDecoration(
     snapshot: WidgetSnapshot,
@@ -284,8 +230,6 @@ private fun TrackDecoration(
     alpha: Float = colors.decorationAlpha,
 ) {
     val bitmap = snapshot.decorations[corner] ?: return
-    // Both sides explicit: with a wrapped width the ImageView would take the bitmap's own pixel
-    // width and draw the circuit small, centred in a tall empty box.
     val aspect = bitmap.width.toFloat() / bitmap.height.coerceAtLeast(1)
     val drawHeight = minOf(height, maxWidth / aspect)
     Box(
@@ -306,10 +250,6 @@ private fun TrackDecoration(
     }
 }
 
-/**
- * 2x1: flag and session over the countdown, as one block centred vertically - with the day and
- * time between them when the cell is tall enough (Pixel), two lines on One UI's short 2x1.
- */
 @Composable
 private fun SmallLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
     val context = LocalContext.current
@@ -344,7 +284,6 @@ private fun SmallLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
     }
 }
 
-/** 4x1: flag, session and GP on one line, countdown pill at the end. */
 @Composable
 private fun WideLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
     val context = LocalContext.current
@@ -368,13 +307,6 @@ private fun WideLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
     }
 }
 
-/**
- * 2x2: overline, flag + Grand Prix, then the next session with a big countdown - in an inset like
- * the in-app card when there is room, flat when the widget is only two short rows tall.
- *
- * Narrow but tall (2x3, 3x4 on 5-column grids) it also lists the sessions after that one below
- * the inset, as many whole rows as the height holds.
- */
 @Composable
 private fun MediumLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
     val context = LocalContext.current
@@ -383,7 +315,6 @@ private fun MediumLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
     val height = LocalSize.current.height
     val roomy = height >= WidgetSizes.MediumTall.height
     val padding = (if (roomy) 14.dp else 12.dp)
-    // Room left under the roomy card (padding, header, inset), in whole list rows.
     val cardHeight = MEDIUM_CARD_HEIGHT
     val listRows = if (height >= MEDIUM_LIST_MIN_HEIGHT) {
         rowsThatFit(height - cardHeight - padding, RowHeightTwoLine)
@@ -430,7 +361,6 @@ private fun MediumLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
                 snapshot = snapshot,
                 entries = snapshot.entries.drop(1).take(listRows),
                 cardWeekend = hero.weekend,
-                // The inset already counts down to the first upcoming session.
                 countdownTarget = WidgetPlanner.countdownTarget(snapshot.entries, now).takeIf { it != hero },
                 twoLine = true,
                 space = height - cardHeight - padding,
@@ -440,22 +370,10 @@ private fun MediumLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
     }
 }
 
-/** From this height a narrow widget lists more sessions under the 2x2 card (about 3 rows). */
 private val MEDIUM_LIST_MIN_HEIGHT = 300.dp
 
-/**
- * Height the roomy 2x2 card takes before the list: top padding, the header, the 10 dp
- * gap, the inset and the 6 dp gap above the list - rounded up so a row is never clipped.
- */
 private val MEDIUM_CARD_HEIGHT = 176.dp
 
-/**
- * 4x2: the Grand Prix card (flag, name, circuit, dates, track outline) on the left, the next
- * sessions on the right as a segmented list - the first upcoming one with the countdown, a running
- * one with LIVE. The list holds as many whole rows as the height allows, the leftover height shared
- * between them. The circuit fills what the card's text leaves free: muted in the primary colour
- * when the circuit-background setting is on, the plain tinted outline when it is off.
- */
 @Composable
 private fun LargeLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
     val context = LocalContext.current
@@ -475,8 +393,6 @@ private fun LargeLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
 
     Row(modifier = GlanceModifier.fillMaxSize().padding(padding)) {
         Box(modifier = GlanceModifier.defaultWeight().fillMaxHeight()) {
-            // Circuit background on but no free room under the text (a short 4x2): the whole
-            // circuit, faint, behind the card instead - drawn once either way.
             if (muted && outline != null && outlineSize == null) {
                 FaintCardOutline(outline, size, colors)
             }
@@ -494,7 +410,6 @@ private fun LargeLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
                 Spacer(GlanceModifier.height(2.dp))
                 WText(weekendDates(weekend), colors.onSurface, 12.sp, FontWeight.Medium)
                 if (outline != null && outlineSize != null) {
-                    // The free part of the card, the whole circuit centred in it with a margin.
                     Box(
                         modifier = GlanceModifier.defaultWeight().fillMaxWidth().padding(top = 8.dp, bottom = 4.dp, end = 8.dp),
                         contentAlignment = Alignment.Center,
@@ -504,7 +419,6 @@ private fun LargeLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
                             contentDescription = null,
                             alpha = if (muted) LARGE_OUTLINE_MUTED_ALPHA else 1f,
                             contentScale = ContentScale.Fit,
-                            // One dark line on transparency: the tint repaints it in the theme colour.
                             colorFilter = ColorFilter.tint(
                                 if (muted) colors.decoration.provider else colors.onSurfaceVariant.provider,
                             ),
@@ -532,11 +446,6 @@ private fun LargeLayout(snapshot: WidgetSnapshot, colors: WidgetColors) {
     }
 }
 
-/**
- * The whole circuit, faint, filling the bottom of the 4x2 card's column behind its text: for a
- * card too short to give the outline a place of its own. As wide as the column, never taller than
- * the widget's inner height.
- */
 @Composable
 private fun FaintCardOutline(outline: android.graphics.Bitmap, widget: DpSize, colors: WidgetColors) {
     val aspect = outline.width.toFloat() / outline.height.coerceAtLeast(1)
@@ -554,31 +463,18 @@ private fun FaintCardOutline(outline: android.graphics.Bitmap, widget: DpSize, c
     }
 }
 
-/** Opacity of the muted (circuit-background) outline in the 4x2 card: soft, still recognisable. */
 private const val LARGE_OUTLINE_MUTED_ALPHA = 0.45f
 
-/**
- * The outline's size in the 4x2 card: as wide as the card column allows, at its own aspect ratio,
- * no taller than the height the text above leaves (estimated conservatively, so it is never cut).
- * Null when too little is left to be worth drawing.
- */
 private fun largeOutlineSize(widget: DpSize, fontScale: Float, aspect: Float): DpSize? {
-    // Generous line height (Google Sans and One UI fonts run tall), so the estimate errs small.
     fun line(sp: Float) = (sp * 1.5f * fontScale).dp
-    // Row padding 12 + column top 2, overline, 6, name (flag 17 dp), circuit, dates, box margins.
     val text = 14.dp + line(11f) + 6.dp + maxOf(line(18f), 17.dp) + 2.dp + line(12f) + 2.dp + line(12f)
     val freeHeight = widget.height - text - 12.dp - 8.dp - 4.dp - 6.dp
-    // Half of the row after its padding and the 10 dp gap, minus the column and box end padding.
     val freeWidth = (widget.width - 24.dp - 10.dp) / 2 - 6.dp - 8.dp
     val width = minOf(freeWidth, freeHeight * aspect)
     if (width < 48.dp || width / aspect < 40.dp) return null
     return DpSize(width, width / aspect)
 }
 
-/**
- * Session tiles in [space]: as many whole, compact tiles as fit, the height left over shared out
- * evenly between them (up to [RowGapMax]), the list centred - no empty band, no stretched tiles.
- */
 @Composable
 private fun SessionList(
     snapshot: WidgetSnapshot,
@@ -599,8 +495,7 @@ private fun SessionList(
     }
     Column(modifier = GlanceModifier.fillMaxWidth()) {
         rows.forEachIndexed { index, entry ->
-            // The gap is the top padding of a wrapper, not a Spacer: a Glance Column takes at
-            // most 10 children, and a tall widget lists up to [MAX_LIST_ROWS] tiles.
+            // Padding, not a Spacer: a Glance Column holds at most 10 children.
             Box(modifier = GlanceModifier.fillMaxWidth().padding(top = if (index > 0) gap else 0.dp)) {
                 SessionRow(
                     snapshot = snapshot,
@@ -616,15 +511,9 @@ private fun SessionList(
     }
 }
 
-/** Whole list rows of [rowHeight], [RowGap] apart, that fit in [space]. */
 private fun rowsThatFit(space: Dp, rowHeight: Dp): Int =
     WidgetPlanner.rowsThatFit(space.value, rowHeight.value, RowGap.value)
 
-/**
- * One session tile: name over day and time (one line on short widgets), and at the end, centred,
- * the countdown pill or LIVE. The text takes the remaining width and only ellipsizes when it
- * genuinely runs out of it.
- */
 @Composable
 private fun SessionRow(
     snapshot: WidgetSnapshot,
@@ -712,7 +601,6 @@ private fun Overline(
     )
 }
 
-/** The flag, rounded like the in-app CountryFlag, followed by [gap]; nothing when not loaded. */
 @Composable
 private fun Flag(snapshot: WidgetSnapshot, weekend: RaceWeekend, size: DpSize, gap: Dp = 6.dp) {
     val bitmap = weekend.countryCode?.lowercase()?.let(snapshot.flags::get) ?: return
@@ -725,7 +613,6 @@ private fun Flag(snapshot: WidgetSnapshot, weekend: RaceWeekend, size: DpSize, g
     Spacer(GlanceModifier.width(gap))
 }
 
-/** The big countdown of the small and medium layouts ("in 16h 41m"), or a LIVE pill. */
 @Composable
 private fun HeroCountdown(
     snapshot: WidgetSnapshot,
@@ -747,7 +634,6 @@ private fun HeroCountdown(
     }
 }
 
-/** "in 1d 13h" on primary-container, the in-app card's pill; LIVE on red while it runs. */
 @Composable
 private fun CountdownPill(snapshot: WidgetSnapshot, entry: WidgetEntry, colors: WidgetColors, compact: Boolean = false) {
     val context = LocalContext.current
@@ -796,7 +682,6 @@ private fun LivePill(context: Context, colors: WidgetColors, compact: Boolean = 
     }
 }
 
-/** One line of text, ellipsized. */
 @Composable
 private fun WText(
     text: String,
@@ -816,12 +701,10 @@ private fun WText(
 
 // ================================================================== helpers
 
-/** A running session if there is one, else the next: what the small and medium layouts feature. */
 private fun heroEntry(snapshot: WidgetSnapshot): WidgetEntry = snapshot.entries.first()
 
 private val weekdayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE", Locale.getDefault())
 
-/** "Today · 15:00", "Tomorrow · 15:00", "Sat · 15:00", or "Sat 4 Oct · 15:00" further out. */
 private fun whenLabel(context: Context, start: Long, now: Long): String {
     val zone = ZoneId.systemDefault()
     val time = formatTime(start)
@@ -837,7 +720,6 @@ private fun whenLabel(context: Context, start: Long, now: Long): String {
     }
 }
 
-/** "Sat 15:00" for the one-line rows, where there is no room for "Tomorrow". */
 private fun shortWhen(start: Long, now: Long): String {
     val zone = ZoneId.systemDefault()
     return if (WidgetPlanner.dayLabel(start, now, zone) == DayLabel.TODAY) {
@@ -850,7 +732,6 @@ private fun shortWhen(start: Long, now: Long): String {
 private fun circuitLine(weekend: RaceWeekend): String =
     listOf(weekend.circuitName, weekend.locality).filter { it.isNotBlank() }.distinct().joinToString(" · ")
 
-/** First to last known session of the weekend, e.g. "4 – 6 Sep". */
 private fun weekendDates(weekend: RaceWeekend): String {
     val starts = weekend.sessions.mapNotNull { it.startUtcMillis }
     return formatDateRange(starts.minOrNull(), starts.maxOrNull() ?: weekend.raceStartUtcMillis)

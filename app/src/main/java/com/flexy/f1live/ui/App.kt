@@ -93,19 +93,14 @@ private enum class Destination(
     Standings("standings", R.string.tab_standings, Icons.Filled.EmojiEvents),
 }
 
-/** Gap between the floating toolbar and the navigation-bar inset below it. */
 private val ToolbarMargin = 16.dp
 
-/** Scroll deltas below this (in pixels per frame) are noise, not an intent to hide the toolbar. */
 private const val ToolbarScrollThreshold = 2f
 
-/** App settings: a detail screen reached from the toolbar's trailing gear, not a fourth tab. */
 private const val SettingsRoute = "settings"
 
-/** Every race control message of the live session, opened from the Live tab. */
 private const val RaceControlRoute = "race-control"
 
-/** `results/{season}/{round}/{kind}` - a finished session opened from the schedule. */
 private const val ResultsRoute = "results/{season}/{round}/{kind}"
 
 fun resultsRoute(season: Int, round: Int, kind: SessionKind): String =
@@ -114,12 +109,6 @@ fun resultsRoute(season: Int, round: Int, kind: SessionKind): String =
 private fun NavBackStackEntry.isTopLevel(): Boolean =
     Destination.entries.any { it.route == destination.route }
 
-/**
- * [openLiveRequest] changes every time a home-screen widget is tapped while the app is already
- * open; the app then returns to the Live tab (a fresh launch starts there anyway).
- * [openStandingsRequest] changes with every standings widget tap, including the one that started
- * the app; the app then opens the Standings tab, whose table the widget picked beforehand.
- */
 @Composable
 fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
     val navController = rememberNavController()
@@ -128,8 +117,6 @@ fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
     }
     LaunchedEffect(openStandingsRequest) {
         if (openStandingsRequest > 0) {
-            // On a cold start the graph is only set once the NavHost is laid out: its first
-            // back stack entry says it is ready.
             navController.currentBackStackEntryFlow.first()
             navController.navigate(Destination.Standings.route) {
                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -143,7 +130,6 @@ fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         val layoutDirection = LocalLayoutDirection.current
-        // The toolbar floats over the content, so the lists need to reserve room for it themselves.
         val contentPadding = PaddingValues(
             start = innerPadding.calculateStartPadding(layoutDirection),
             end = innerPadding.calculateEndPadding(layoutDirection),
@@ -152,10 +138,6 @@ fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
                 FloatingToolbarDefaults.ContainerSize + ToolbarMargin * 2,
         )
 
-        // The toolbar hides itself rather than using exitAlwaysScrollBehavior: that behavior
-        // translates the bar by its own height only, so the part sitting in the bottom margin and
-        // the navigation-bar inset stayed on screen. Here the travel is the full distance to the
-        // bottom edge, measured from the bar itself.
         var toolbarHeightPx by remember { mutableIntStateOf(0) }
         var toolbarHidden by remember { mutableStateOf(false) }
         val hideFraction by animateFloatAsState(
@@ -169,7 +151,6 @@ fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
         val toolbarScroll = remember {
             object : NestedScrollConnection {
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    // Dragging content up (negative y) means the user is reading downwards.
                     if (available.y < -ToolbarScrollThreshold) toolbarHidden = true
                     if (available.y > ToolbarScrollThreshold) toolbarHidden = false
                     return Offset.Zero
@@ -180,7 +161,6 @@ fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
-                    // Nothing consumed while pulling down: the list is already at the top.
                     if (consumed.y == 0f && available.y > 0f) toolbarHidden = false
                     return Offset.Zero
                 }
@@ -192,24 +172,17 @@ fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
                 .fillMaxSize()
                 .nestedScroll(toolbarScroll),
         ) {
-            // Only the screens are masked (each inside its own card, see NavMotionScreen): the
-            // toolbar is a sibling of the NavHost, so it stays fully opaque while the rows behind
-            // it dissolve.
             val fadeTop = innerPadding.calculateTopPadding()
             val fadeBottom = innerPadding.calculateBottomPadding() +
                 FloatingToolbarDefaults.ContainerSize + ToolbarMargin * 2
             val screenBackground = MaterialTheme.colorScheme.background
             val motion = rememberNavMotion()
-            // Pops one screen, but only from the screen that is actually on top: a second tap on
-            // a back arrow while the first pop is still animating must not pop the tab below too.
             val popFrom: (NavBackStackEntry) -> Unit = { entry ->
                 if (navController.currentBackStackEntry?.id == entry.id) navController.popBackStack()
             }
             NavHost(
                 navController = navController,
                 startDestination = Destination.Live.route,
-                // The screens animate themselves (NavMotionScreen); these only pick the motion
-                // and keep the outgoing screen composed until its own animation has finished.
                 enterTransition = {
                     motion.decide(initialState.isTopLevel(), targetState.isTopLevel(), pop = false)
                     EnterTransition.None
@@ -232,8 +205,6 @@ fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
                     NavMotionScreen(motion, screenBackground, fadeTop, fadeBottom) {
                         LiveScreen(
                             contentPadding = contentPadding,
-                            // The next-round card opens the Schedule tab, exactly as its toolbar
-                            // item would; the schedule already expands the next weekend.
                             onOpenSchedule = {
                                 navController.navigate(Destination.Schedule.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
@@ -296,16 +267,10 @@ fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
                 }
             }
 
-            // The toolbar belongs to the three top-level tabs; a detail screen owns its own bar.
             val topLevel = Destination.entries.any { destination ->
                 currentDestination?.hierarchy?.any { it.route == destination.route } == true
             }
-            // A detail screen's own scrolling reaches the same nested-scroll connection; coming
-            // back to a tab must always bring the toolbar back rather than leave it parked below.
             LaunchedEffect(topLevel) { if (topLevel) toolbarHidden = false }
-            // While a back gesture previews the tab under a detail screen the toolbar stays hidden:
-            // it is not part of that preview, it only enters once the gesture commits and the
-            // destination actually changes, so a cancelled gesture leaves it untouched.
             AnimatedVisibility(
                 visible = topLevel,
                 enter = fadeIn() + slideInVertically { it },
@@ -318,8 +283,6 @@ fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
                     expanded = true,
                     modifier = Modifier
                         .onSizeChanged { toolbarHeightPx = it.height }
-                        // Its own height plus the margin and the navigation-bar inset below it:
-                        // that is exactly the distance to the bottom edge of the display.
                         .offset {
                             IntOffset(
                                 x = 0,
@@ -347,8 +310,6 @@ fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
                             },
                         )
                     }
-                    // Settings sit apart from the three tabs: a hairline, then an icon that opens
-                    // a detail screen. It never becomes "selected" - the toolbar hides on it.
                     VerticalDivider(
                         modifier = Modifier
                             .align(Alignment.CenterVertically)
@@ -369,7 +330,6 @@ fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
     }
 }
 
-/** An icon-only toolbar action, sized like an unselected [ToolbarNavItem]. */
 @Composable
 private fun ToolbarIconItem(icon: ImageVector, label: String, onClick: () -> Unit) {
     Box(
@@ -388,10 +348,6 @@ private fun ToolbarIconItem(icon: ImageVector, label: String, onClick: () -> Uni
     }
 }
 
-/**
- * One destination inside the floating toolbar: an icon that grows a pill with its label
- * once selected, so all three fit comfortably on a narrow phone.
- */
 @Composable
 private fun RowScope.ToolbarNavItem(
     destination: Destination,

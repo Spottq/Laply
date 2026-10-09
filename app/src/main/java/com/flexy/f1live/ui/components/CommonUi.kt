@@ -43,7 +43,6 @@ import com.flexy.f1live.model.TrackFlag
 
 private val FallbackTeamColor = Color(0xFF8A8A8A)
 
-/** Parses a live-feed team colour such as "F47600". Tolerates a leading hash, null and junk. */
 fun teamColor(hex: String?): Color {
     val cleaned = hex?.trim()?.removePrefix("#") ?: return FallbackTeamColor
     if (cleaned.length != 6 && cleaned.length != 8) return FallbackTeamColor
@@ -88,16 +87,10 @@ fun statusLabel(status: SessionStatus): String = when (status) {
 fun flagCdnUrl(countryCode: String?): String? =
     countryCode?.takeIf { it.isNotBlank() }?.let { "https://flagcdn.com/w80/" + it.lowercase() + ".png" }
 
-/** Tabular-ish figures for lap times, so columns do not jitter as digits change. */
 val MonoFamily: FontFamily = FontFamily.Monospace
 
 // ---------------------------------------------------------------- avatars
 
-/**
- * Circular driver headshot on a team-coloured disc with an optional flag badge.
- * The coloured disc with the TLA doubles as the placeholder while Coil loads,
- * and as the permanent fallback when there is no headshot URL.
- */
 @Composable
 fun DriverAvatar(
     driver: DriverTiming,
@@ -106,10 +99,6 @@ fun DriverAvatar(
     ringWidth: Dp = 0.dp,
     flagBadge: Boolean = true,
     crossfade: Boolean = false,
-    /**
-     * Pads the left as far as the flag badge overhangs on the right, so the circle itself sits on
-     * the centre line of whatever centres the avatar (the podium columns).
-     */
     centered: Boolean = false,
 ) {
     val color = rememberTeamColor(driver.teamColorHex)
@@ -131,9 +120,6 @@ fun DriverAvatar(
                 .then(if (ringWidth > 0.dp) Modifier.border(ringWidth, color, CircleShape) else Modifier),
             contentAlignment = Alignment.Center,
         ) {
-            // Headshot PNGs are transparent, so the TLA must go away once the image has loaded.
-            // The flag is read inside `graphicsLayer`, i.e. in the *draw* phase: flipping it skips
-            // recomposition and re-layout of the row and only invalidates this layer.
             val loaded = remember(driver.headshotUrl) { mutableStateOf(false) }
             Text(
                 text = driver.tla,
@@ -146,7 +132,6 @@ fun DriverAvatar(
             if (!driver.headshotUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = rememberImageModel(driver.headshotUrl, crossfade),
-                    // Decorative: the row already announces the driver by name.
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     onSuccess = { loaded.value = true },
@@ -171,18 +156,9 @@ fun DriverAvatar(
     }
 }
 
-/**
- * Team colours arrive as hex strings on every feed update; parsing allocates and runs on every
- * composition, so cache it against the string itself.
- */
 @Composable
 fun rememberTeamColor(hex: String?): Color = remember(hex) { teamColor(hex) }
 
-/**
- * The shared [coil3.ImageLoader] no longer crossfades, because a fade per image turns a 22-row
- * fling into 44 concurrent animations. The three big header portraits opt back in, and only they
- * pay for a hand-built request; everywhere else the plain URL takes Coil's fast path.
- */
 @Composable
 private fun rememberImageModel(url: String, crossfade: Boolean): Any {
     if (!crossfade) return url
@@ -197,7 +173,6 @@ private fun rememberImageModel(url: String, crossfade: Boolean): Any {
 
 private const val CrossfadeMillis = 150
 
-/** Standalone rounded flag, used by the schedule cards. */
 @Composable
 fun CountryFlag(countryCode: String?, modifier: Modifier = Modifier, corner: Dp = 6.dp) {
     val url = flagCdnUrl(countryCode)
@@ -264,31 +239,19 @@ fun LabelledDot(color: Color, label: String, modifier: Modifier = Modifier) {
 
 // ---------------------------------------------------------------- checkered header
 
-/**
- * Subtle checkered-flag pattern drawn with Canvas: alternating light squares at ~6%
- * opacity over the surface, faded towards the bottom so content below sits on plain surface.
- */
 @Composable
 fun CheckeredBackground(
     modifier: Modifier = Modifier,
     cell: Dp = 22.dp,
     squareAlpha: Float = 0.06f,
-    /**
-     * A backdrop for a whole screen rather than a header band: every row is drawn and the fade only
-     * softens the pattern towards the bottom instead of dissolving it, so nothing ends in an edge.
-     */
     fullScreen: Boolean = false,
 ) {
     val surface = MaterialTheme.colorScheme.surface
     val square = MaterialTheme.colorScheme.onSurface
-    // drawWithCache keeps the derived colour and the vertical fade brush across frames: the plain
-    // Canvas version rebuilt a Brush and a Color per rect on every single draw pass while scrolling.
     Spacer(
         modifier = modifier.drawWithCache {
             val step = cell.toPx()
             val squareColor = square.copy(alpha = squareAlpha)
-            // Fully opaque well before the bottom edge, so the last row of squares dissolves
-            // instead of being cut off by the header's boundary.
             val fade = if (fullScreen) {
                 Brush.verticalGradient(
                     0f to surface.copy(alpha = 0f),
@@ -311,16 +274,12 @@ fun CheckeredBackground(
                 drawRect(surface)
                 if (step <= 0f) return@onDrawBehind
                 val cols = (size.width / step).toInt() + 1
-                // Nothing below the point where the fade is fully opaque: a partial last row
-                // would otherwise show as a line of clipped slivers at the header's edge.
                 val rows = if (fullScreen) {
                     (size.height / step).toInt() + 1
                 } else {
                     (size.height * 0.86f / step).toInt()
                 }
                 for (row in 0 until rows) {
-                    // Only every other square is painted, so start each row on the right parity
-                    // and stride by two instead of testing every cell.
                     var col = row % 2
                     while (col < cols) {
                         drawRect(

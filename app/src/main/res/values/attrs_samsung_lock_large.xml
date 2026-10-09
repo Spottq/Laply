@@ -1,13 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Extra Samsung One UI lock-screen widget attributes used only by the 2x2 widget
-    (xml/lock_2x2_info.xml, xml/lock_2x2_info_oneui.xml). Read BY NAME by Samsung's host, so the
-    names and flag values must stay exactly as they are. The shared ones (widgetStyle, widgetSize,
-    targetHost, allowMultipleSizes, *LayoutSmall/Medium) live in attrs.xml / attrs_samsung_lock.xml:
-    do not declare them here too (duplicate attr = resource merge error).
-    Names as in the user's LockWidgets project (res/values/attrs.xml) and Samsung Notes' 2x2
-    lock-screen widget (lockWidgetSize, previewSize: the same flags as widgetSize).
--->
+<!-- Read by Samsung's host by name: keep names and values. -->
 <resources>
     <attr name="initialLayoutLarge" format="reference" />
     <attr name="previewLayoutLarge" format="reference" />

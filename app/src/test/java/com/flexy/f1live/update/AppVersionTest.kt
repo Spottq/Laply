@@ -34,7 +34,6 @@ class AppVersionTest {
     @Test
     fun preReleaseSortsBeforeItsRelease() {
         assertOrder("1.1-alpha", "1.1-alpha.1", "1.1-alpha.beta", "1.1-beta", "1.1-beta.2", "1.1-beta.11", "1.1-rc.1", "1.1")
-        // A pre-release of a later version is still newer than an older release.
         assertOrder("1.0", "1.1-beta")
         assertEquals(0, AppVersion.compare("v1.1-RC1", "1.1-rc1"))
     }

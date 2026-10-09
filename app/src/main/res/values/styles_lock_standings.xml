@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Lock-screen standings widgets: white text, recoloured by Samsung's host. -->
     <style name="LockStandingsText">
         <item name="android:layout_height">wrap_content</item>
         <item name="android:ellipsize">end</item>

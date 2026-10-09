@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Lock-screen standings widgets -->
     <string name="lock_standings_drivers_label">Laply · drivers\' standings</string>
     <string name="lock_standings_drivers_description">The top of the drivers\' championship and the title line, on a tablet lock screen</string>
     <string name="lock_standings_teams_label">Laply · constructors\' standings</string>

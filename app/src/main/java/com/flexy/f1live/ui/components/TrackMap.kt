@@ -34,12 +34,6 @@ import com.flexy.f1live.R
 import com.flexy.f1live.data.CircuitMaps
 import com.flexy.f1live.model.RaceWeekend
 
-/**
- * What a screen shows for a circuit: F1's official detailed map (corner numbers, sectors) with the
- * number of turns; F1's clean outline when there is no detailed map; and - only for the few circuits
- * F1 publishes neither for - a picture the resolver found elsewhere. The old 2018 "Circuit maps
- * 16x9" CDN set is deliberately never used: its opaque labels turn into black squares here.
- */
 @Immutable
 data class CircuitOutline(
     val outlineUrl: String?,
@@ -50,14 +44,9 @@ data class CircuitOutline(
     val isEmpty: Boolean get() = detailedMapUrl == null && outlineUrl == null && fallbackMapUrl == null
 
     companion object {
-        /** True when [of] would take a fallback picture, i.e. it is worth resolving one. */
         fun needsFallback(weekend: RaceWeekend): Boolean =
             CircuitMaps.f1OutlineUrl(weekend) == null && CircuitMaps.f1MapUrl(weekend) == null
 
-        /**
-         * [resolvedMapUrl] is what [com.flexy.f1live.data.CircuitMapResolver] returned; it is only
-         * kept when it cannot be the detailed CDN map (see [needsFallback]).
-         */
         fun of(weekend: RaceWeekend, resolvedMapUrl: String? = null): CircuitOutline =
             CircuitOutline(
                 outlineUrl = CircuitMaps.f1OutlineUrl(weekend),
@@ -68,12 +57,6 @@ data class CircuitOutline(
     }
 }
 
-/**
- * The circuit card: F1's detailed map in its own colours, with the number of turns under it. When
- * there is no detailed map (or it fails to load) the clean outline tinted with the theme - the Next
- * Round card's drawing - takes its place; a circuit with neither gets [TrackMapCard], and a circuit
- * with nothing at all draws nothing.
- */
 @Composable
 fun CircuitOutlineCard(
     circuit: CircuitOutline,
@@ -100,13 +83,11 @@ fun CircuitOutlineCard(
             AsyncImage(
                 model = detailed,
                 contentDescription = null,
-                // Transparent PNG with a white track edge: drawn as published, never tinted.
                 contentScale = ContentScale.Fit,
                 onError = { detailedFailed = true },
                 modifier = Modifier
                     .widthIn(max = maxMapWidth)
                     .fillMaxWidth()
-                    // The detailed maps are 900 x 506.
                     .aspectRatio(900f / 506f),
             )
         } else {
@@ -114,13 +95,11 @@ fun CircuitOutlineCard(
                 model = circuit.outlineUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
-                // One line on transparency: SrcIn repaints it in the theme colour, light or dark.
                 colorFilter = ColorFilter.tint(colors.onSurface, BlendMode.SrcIn),
                 modifier = Modifier
                     .padding(vertical = 4.dp)
                     .widthIn(max = maxOutlineWidth)
                     .fillMaxWidth()
-                    // F1 draws every outline on a 121 x 85 canvas.
                     .aspectRatio(121f / 85f),
             )
         }
@@ -136,10 +115,6 @@ fun CircuitOutlineCard(
     }
 }
 
-/**
- * A circuit picture that is not one of F1's outlines (a Wikipedia page image), on its own plate.
- * Resolving it is the job of [com.flexy.f1live.data.CircuitMapResolver]; this only draws it.
- */
 @Composable
 fun TrackMapCard(
     url: String?,

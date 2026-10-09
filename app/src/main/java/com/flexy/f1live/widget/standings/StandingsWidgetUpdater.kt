@@ -39,35 +39,19 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Instant
 import java.time.ZoneOffset
 
-/**
- * Everything the standings widgets draw, computed once for all of them and every size. Outside the
- * season - before its first race - it is last season's final table.
- */
 data class StandingsSnapshot(
     val nowMillis: Long,
     val season: Int,
-    /** The round the table is after; 0 before the first. */
     val round: Int,
     val drivers: List<StandingsEntry>,
     val teams: List<StandingsEntry>,
-    /** Null without a calendar to count the races left. */
     val driversFight: TitleFight?,
     val teamsFight: TitleFight?,
-    /** When the table was fetched, to tell the widgets' own fetches from the app's. */
     val fetchedAtMillis: Long,
     val dynamicColor: Boolean,
-    /** The One UI blur style, as for the session widget (see WidgetUpdater). */
     val glass: GlassStyle? = null,
 )
 
-/**
- * Data, refresh timing and pushes for the three standings widgets.
- *
- * The table changes only after a race or a sprint, so the widgets are redrawn when a new table
- * arrives - fetched by them, on the checks [StandingsWidgetPlanner] plans around each race and
- * sprint, or by the app's own Standings tab - and when an appearance setting changes. Between those
- * they stay as they are: one inexact, non-wakeup alarm per check, nothing per minute.
- */
 object StandingsWidgetUpdater {
 
     const val ACTION_REFRESH = "com.flexy.f1live.widget.action.REFRESH_STANDINGS"
@@ -76,35 +60,26 @@ object StandingsWidgetUpdater {
     private const val REQUEST_REFRESH_ALARM = 13
     private const val LOAD_TIMEOUT_MS = 8_000L
 
-    /** A snapshot this fresh is reused by the next widget session instead of being rebuilt. */
     private const val REUSE_MS = 10_000L
 
-    /** The picker entries, for the previews and to find the placed widgets. */
     val receivers: List<Class<out GlanceAppWidgetReceiver>>
         get() = StandingsWidgetKind.entries.map { it.receiver }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val lock = Mutex()
 
-    /** One direct composition per widget at a time, as in WidgetUpdater. */
     private val pushLock = Mutex()
 
     private val _snapshot = MutableStateFlow<StandingsSnapshot?>(null)
-
-    /** The latest snapshot; running widget sessions collect it, so a refresh recomposes them. */
     val snapshot: StateFlow<StandingsSnapshot?> = _snapshot.asStateFlow()
 
-    /** Called once from F1App.onCreate. */
     fun attach(app: Application) {
         scope.launch {
-            // A table the app fetched (the Standings tab, pull to refresh) goes straight to the
-            // widgets. Their own fetches come back through here too and are already drawn.
             JolpicaStandingsRepository.updates.collect { standings ->
                 if (standings.fetchedAtMillis != _snapshot.value?.fetchedAtMillis) refresh(app, fetch = false)
             }
         }
         scope.launch {
-            // Monet on/off and the One UI glass settings change every colour of the widgets.
             combine(
                 AppSettings.dynamicColor,
                 AppSettings.widgetSamsungBlur,
@@ -117,10 +92,6 @@ object StandingsWidgetUpdater {
         }
     }
 
-    /**
-     * Rebuilds the snapshot - fetching the table first when a check is due and [fetch] allows it -
-     * and redraws every placed standings widget. Fire and forget; [onDone] runs in all cases.
-     */
     fun refresh(context: Context, fetch: Boolean = true, onDone: (() -> Unit)? = null) {
         val app = context.applicationContext
         scope.launch {
@@ -149,8 +120,6 @@ object StandingsWidgetUpdater {
                 val widget = kind.newWidget()
                 for (id in ids) {
                     val glanceId = glanceManager.getGlanceIdBy(id)
-                    // Composed here and pushed straight to the launcher, like the session widget:
-                    // an update() through WorkManager can land many seconds later.
                     runCatching {
                         val options = appWidgetManager.getAppWidgetOptions(id)
                         appWidgetManager.updateAppWidget(id, widget.compose(context, glanceId, options))
@@ -163,10 +132,6 @@ object StandingsWidgetUpdater {
         }
     }
 
-    /**
-     * The snapshot for a widget session: reused when it is younger than [maxAgeMs] (three widgets
-     * and several sizes render in the same second), rebuilt otherwise. Rebuilding re-arms the alarm.
-     */
     suspend fun current(context: Context, maxAgeMs: Long = REUSE_MS, fetch: Boolean = true): StandingsSnapshot =
         lock.withLock {
             val now = System.currentTimeMillis()
@@ -185,14 +150,12 @@ object StandingsWidgetUpdater {
             built
         }
 
-    /** For the widget picker: the stored table, or a made-up one when there is none yet. */
     suspend fun previewSnapshot(context: Context): StandingsSnapshot {
         val now = System.currentTimeMillis()
         val (built, _) = build(context, now, fetch = false)
         return if (built.drivers.isEmpty()) sample(now) else built.copy(glass = null)
     }
 
-    /** The snapshot, and when the table is worth checking again. */
     private suspend fun build(context: Context, now: Long, fetch: Boolean): Pair<StandingsSnapshot, Long> {
         val year = Instant.ofEpochMilli(now).atZone(ZoneOffset.UTC).year
         val weekends = calendar(year)
@@ -204,13 +167,11 @@ object StandingsWidgetUpdater {
                 stored
             }
         }
-        // Checks follow this season's calendar even while last season's table is on show.
         val nextCheckAt = StandingsWidgetPlanner.nextCheckAt(current?.fetchedAtMillis ?: 0L, weekends, now)
 
         var standings = current
         var standingsWeekends = weekends
         if (current == null || current.drivers.isEmpty()) {
-            // Before the first race of the season its table is empty: last season's final one.
             val lastYear = calendar(year - 1)
             val previous = withTimeoutOrNull(LOAD_TIMEOUT_MS) {
                 val stored = JolpicaStandingsRepository.cached(year - 1)
@@ -252,7 +213,6 @@ object StandingsWidgetUpdater {
         )
     }
 
-    /** The season's calendar from the schedule repository (memory, disk, then network). */
     private suspend fun calendar(season: Int): List<RaceWeekend> {
         val schedule = runCatching { Graph.schedule }.getOrNull() ?: return emptyList()
         return withTimeoutOrNull(LOAD_TIMEOUT_MS) { schedule.getSeason(season).getOrNull() }.orEmpty()
@@ -265,7 +225,6 @@ object StandingsWidgetUpdater {
             null
         }
 
-    /** A plausible table for the picker preview before the app has stored a real one. */
     private fun sample(now: Long): StandingsSnapshot {
         fun driver(position: Int, points: Double, wins: Int, code: String, first: String, last: String, team: String, id: String) =
             DriverStanding(position, points, wins, code, null, first, last, "", team, id)
@@ -317,7 +276,6 @@ object StandingsWidgetUpdater {
 
     // ------------------------------------------------------------------ alarm
 
-    /** Inexact and non-wakeup: the checks are hours apart, and a sleeping phone shows nothing. */
     private fun armAlarm(context: Context, triggerAt: Long) {
         if (placedWidgets(context).isEmpty() && !StandingsLockWidget.anyPlaced(context)) {
             cancelAlarm(context)
