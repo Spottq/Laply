@@ -365,6 +365,32 @@ class CompositeLiveTimingClientTest {
         assertEquals(other, preferState(other, rich))
     }
 
+    @Test
+    fun `the chequered flag ends the live session on screen`() = runBlocking {
+        val composite = client()
+        composite.start()
+        primary.push(f1State)
+        awaitUntil("live state published") { composite.state.value.isLive }
+
+        primary.push(f1State.copy(status = SessionStatus.FINISHED))
+
+        awaitUntil("finish published") { composite.state.value.status == SessionStatus.FINISHED }
+    }
+
+    @Test
+    fun `preferState lets only the same session end a live one`() {
+        val live = espnState
+        // The network reports this very session as over: the finish goes on screen.
+        val finished = live.copy(status = SessionStatus.FINALISED)
+        assertEquals(finished, preferState(live, finished))
+        // Some other, earlier session that is over must not end the live one.
+        val earlier = finished.copy(sessionName = "Practice 3")
+        assertEquals(live, preferState(live, earlier))
+        // Nor may the disk cache, even for the same session.
+        val cached = finished.copy(source = LiveSource.CACHE)
+        assertEquals(live, preferState(live, cached))
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private fun awaitUntil(what: String, timeoutMs: Long = 2_000L, condition: () -> Boolean) {

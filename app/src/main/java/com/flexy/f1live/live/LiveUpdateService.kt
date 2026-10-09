@@ -355,6 +355,15 @@ class LiveUpdateService : Service() {
             if (expired || targetAlreadyOver(state)) quit()
             return
         }
+        // Belt and braces: a feed that never reports the chequered flag (it went quiet, or kept
+        // replaying the last lap) must not pin the Live Update to the status bar for good.
+        val session = target
+        if (session != null &&
+            System.currentTimeMillis() >= AutoFollowPlanner.windowEnd(session) + OVERRUN_GRACE_MS
+        ) {
+            quit()
+            return
+        }
         if (!LiveNotificationBuilder.isFinished(state)) {
             // Back to running (a restart after a red flag): the countdown no longer applies.
             finishJob?.cancel()
@@ -633,6 +642,12 @@ class LiveUpdateService : Service() {
         private const val WATCHDOG_INTERVAL_MS = 60_000L
         /** How long the finished classification stays up before the Live Update goes away. */
         private const val FINISHED_LINGER_MS = 10L * 60L * 1000L
+
+        /**
+         * How far past the scheduled session window ([AutoFollowPlanner.windowEnd], already a
+         * generous upper bound) a run may go on without the feed ever reporting the finish.
+         */
+        private const val OVERRUN_GRACE_MS = 60L * 60L * 1000L
         private const val INDETERMINATE_SEGMENTS = 3
         private const val DEMO_HOLD_MS = 10_000L
 

@@ -306,7 +306,9 @@ private fun logWarning(message: String, error: Throwable) {
  * In order:
  *  1. an empty classification never replaces a populated one (this is the anti-flicker rule);
  *  2. anything beats nothing;
- *  3. a live session beats a finished one, and is never displaced by a finished one;
+ *  3. a live session beats a finished one, and is only displaced by a finished one when the network
+ *     reports that very session as over - the chequered flag. Some other finished session (ESPN's
+ *     last completed one while its live roster blinks out, the disk cache) never ends it;
  *  4. the disk cache yields to the network - but only to a *different* session, or to one that
  *     actually knows more (lap times, gaps, more cars), so a thinner ESPN copy of the same
  *     classification does not overwrite a richer stored one;
@@ -316,7 +318,11 @@ internal fun preferState(current: LiveSessionState, next: LiveSessionState): Liv
     if (next == current) return current
     if (next.drivers.isEmpty()) return if (current.drivers.isEmpty()) next else current
     if (current.drivers.isEmpty()) return next
-    if (current.isLive != next.isLive) return if (next.isLive) next else current
+    if (current.isLive != next.isLive) {
+        if (next.isLive) return next
+        val sessionEnded = next.source != LiveSource.CACHE && isSameSession(current, next)
+        return if (sessionEnded) next else current
+    }
     if (next.source == LiveSource.CACHE) return current
     if (current.source == LiveSource.CACHE) {
         val sameSession = isSameSession(current, next)
