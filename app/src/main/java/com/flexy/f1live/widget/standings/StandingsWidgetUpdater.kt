@@ -22,6 +22,7 @@ import com.flexy.f1live.model.RaceWeekend
 import com.flexy.f1live.settings.AppSettings
 import com.flexy.f1live.widget.GlassStyle
 import com.flexy.f1live.widget.OneUi
+import com.flexy.f1live.widget.lock.StandingsLockWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -134,8 +135,9 @@ object StandingsWidgetUpdater {
     }
 
     private suspend fun refreshNow(context: Context, fetch: Boolean) {
+        StandingsLockWidget.syncEnabled(context)
         val placed = placedWidgets(context)
-        if (placed.isEmpty()) {
+        if (placed.isEmpty() && !StandingsLockWidget.anyPlaced(context)) {
             cancelAlarm(context)
             return
         }
@@ -178,6 +180,7 @@ object StandingsWidgetUpdater {
             }
             val (built, nextCheckAt) = build(context, now, fetch)
             _snapshot.value = built
+            StandingsLockWidget.push(context, built)
             armAlarm(context, nextCheckAt)
             built
         }
@@ -316,7 +319,7 @@ object StandingsWidgetUpdater {
 
     /** Inexact and non-wakeup: the checks are hours apart, and a sleeping phone shows nothing. */
     private fun armAlarm(context: Context, triggerAt: Long) {
-        if (placedWidgets(context).isEmpty()) {
+        if (placedWidgets(context).isEmpty() && !StandingsLockWidget.anyPlaced(context)) {
             cancelAlarm(context)
             return
         }

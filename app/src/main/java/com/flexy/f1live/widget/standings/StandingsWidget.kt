@@ -596,11 +596,11 @@ private fun roundLabel(context: Context, snapshot: StandingsSnapshot, wide: Bool
 }
 
 /** "DRIVERS · AFTER R20". */
-private fun overline(context: Context, @StringRes label: Int, snapshot: StandingsSnapshot, wide: Boolean): String =
+internal fun overline(context: Context, @StringRes label: Int, snapshot: StandingsSnapshot, wide: Boolean): String =
     (context.getString(label) + " · " + roundLabel(context, snapshot, wide)).uppercase(Locale.getDefault())
 
 /** "LEADER · AFTER R20", or "CHAMPION · 2026" once the season is over. */
-private fun leaderOverline(context: Context, snapshot: StandingsSnapshot, fight: TitleFight?, wide: Boolean): String {
+internal fun leaderOverline(context: Context, snapshot: StandingsSnapshot, fight: TitleFight?, wide: Boolean): String {
     val text = if (fight != null && fight.pointsLeft == 0) {
         context.getString(R.string.standings_widget_champion) + " · " + snapshot.season
     } else {
@@ -617,7 +617,7 @@ private fun fightDetail(context: Context, fight: TitleFight?): String? = when {
 }
 
 /** Under the leader's points: what is left to race for, or that nobody can catch them any more. */
-private fun leaderFooter(context: Context, fight: TitleFight?): String? = when {
+internal fun leaderFooter(context: Context, fight: TitleFight?): String? = when {
     fight == null || fight.pointsLeft == 0 -> null
     fight.decided -> context.getString(R.string.standings_widget_title_decided)
     else -> fight.pointsLeftText

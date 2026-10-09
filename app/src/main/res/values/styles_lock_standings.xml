@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Lock-screen standings widgets: white text, recoloured by Samsung's host. -->
+    <style name="LockStandingsText">
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:fontFamily">sec</item>
+        <item name="android:fontFeatureSettings">tnum</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+
+    <style name="LockStandingsOverline" parent="LockStandingsText">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textFontWeight">700</item>
+        <item name="android:textSize">10sp</item>
+    </style>
+
+    <style name="LockStandingsRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
+
+    <style name="LockStandingsPosition" parent="LockStandingsText">
+        <item name="android:layout_width">14dp</item>
+        <item name="android:layout_marginEnd">6dp</item>
+        <item name="android:gravity">end</item>
+        <item name="android:textFontWeight">700</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="LockStandingsName" parent="LockStandingsText">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:textFontWeight">600</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="LockStandingsPoints" parent="LockStandingsText">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_marginStart">6dp</item>
+        <item name="android:textFontWeight">700</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- Dashes as text, so the host recolours the line with the rows. -->
+    <style name="LockStandingsLine" parent="LockStandingsText">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">10dp</item>
+        <item name="android:layout_marginStart">20dp</item>
+        <item name="android:alpha">0.5</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:text">@string/lock_standings_dashes</item>
+        <item name="android:textSize">8sp</item>
+        <item name="android:visibility">gone</item>
+    </style>
+</resources>

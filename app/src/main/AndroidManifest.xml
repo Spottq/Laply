@@ -199,5 +199,54 @@
                 android:name="samsung.appwidget.monotone.info"
                 android:resource="@xml/lock_2x2_info_oneui" />
         </receiver>
+
+        <!-- Lock-screen standings widgets, 2x2: switched on by StandingsLockWidget.syncEnabled. -->
+        <receiver
+            android:name=".widget.lock.DriverStandingsLockWidgetReceiver"
+            android:enabled="false"
+            android:exported="true"
+            android:label="@string/lock_standings_drivers_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/lock_driver_standings_info" />
+            <meta-data
+                android:name="samsung.appwidget.monotone.info"
+                android:resource="@xml/lock_driver_standings_info_oneui" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.lock.TeamStandingsLockWidgetReceiver"
+            android:enabled="false"
+            android:exported="true"
+            android:label="@string/lock_standings_teams_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/lock_team_standings_info" />
+            <meta-data
+                android:name="samsung.appwidget.monotone.info"
+                android:resource="@xml/lock_team_standings_info_oneui" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.lock.TitleFightLockWidgetReceiver"
+            android:enabled="false"
+            android:exported="true"
+            android:label="@string/lock_title_fight_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/lock_title_fight_info" />
+            <meta-data
+                android:name="samsung.appwidget.monotone.info"
+                android:resource="@xml/lock_title_fight_info_oneui" />
+        </receiver>
     </application>
 </manifest>
