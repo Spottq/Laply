@@ -8,12 +8,15 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -23,16 +26,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.flexy.f1live.R
 import com.flexy.f1live.model.DriverTiming
 import com.flexy.f1live.model.SectorTiming
+import com.flexy.f1live.model.TyreStint
 
 /**
  * The classification card: header, one row per driver, rounded foot.
@@ -218,10 +229,15 @@ fun DriverRow(
             exit = fadeOut() + shrinkVertically(),
         ) {
             val best = useBestSectors && driver.bestSectors.isNotEmpty()
-            SectorRow(
-                sectors = if (best) driver.bestSectors else driver.sectors,
-                labels = if (best) sectorLabels.map { "Best " + it } else sectorLabels,
-            )
+            Column {
+                SectorRow(
+                    sectors = if (best) driver.bestSectors else driver.sectors,
+                    labels = if (best) sectorLabels.map { "Best " + it } else sectorLabels,
+                )
+                // Stops only mean something in a race: in practice and qualifying every run
+                // ends in the pits, and the tyre chain already shows the runs.
+                TyreRow(driver = driver, showPitStops = isRace)
+            }
         }
     }
 }
@@ -262,6 +278,141 @@ fun SectorRow(sectors: List<SectorTiming>, labels: List<String> = SectorLabels) 
             )
         }
     }
+}
+
+/**
+ * The tyre history under the sectors: one chip per stint with the laps it lasted, oldest first,
+ * and the pit stops beside it. Nothing for a source that publishes neither.
+ */
+@Composable
+fun TyreRow(driver: DriverTiming, showPitStops: Boolean) {
+    val stops = if (showPitStops) driver.pitStops else 0
+    if (driver.stints.isEmpty() && stops == 0) return
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 38.dp, top = 2.dp, bottom = 4.dp),
+    ) {
+        // Two sector columns wide; with SectorRow's two 16 dp gaps after it, the stops sit
+        // exactly under S3.
+        Column(modifier = Modifier.weight(2f)) {
+            if (driver.stints.isNotEmpty()) {
+                DetailLabel("Tyres")
+                TyreChain(driver.stints)
+            }
+        }
+        if (stops > 0) {
+            Spacer(Modifier.width(32.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                DetailLabel("Pit stops")
+                // The laps come from the stints; when they do not add up to the count (a
+                // red-flag tyre change, a stop the stints have not caught up with) the count
+                // stands alone.
+                PitStopsValue(stops, driver.pitStopLaps.takeIf { it.size == stops })
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun TyreChain(stints: List<TyreStint>) {
+    FlowRow(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        stints.forEachIndexed { index, stint ->
+            // Separator, chip and laps stay together when a long practice chain wraps.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (index > 0) {
+                    Text(
+                        text = "›",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 5.dp),
+                    )
+                }
+                TyreChip(stint)
+                if (stint.laps > 0) {
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = stint.laps.toString(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontFamily = MonoFamily,
+                        // The last stint is the set on the car now.
+                        fontWeight = if (index == stints.lastIndex) FontWeight.Bold else FontWeight.Medium,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The compound's initial on its colour: a filled disc for a new set, a faded one with a dashed rim
+ * for a set that had already been run.
+ */
+@Composable
+private fun TyreChip(stint: TyreStint) {
+    val tyre = tyreColor(stint.compound)
+    val solid = stint.isNew && tyre != null
+    val rim = if (solid) Color.Black.copy(alpha = 0.35f) else MaterialTheme.colorScheme.onSurfaceVariant
+    Box(
+        modifier = Modifier
+            .size(16.dp)
+            .drawBehind {
+                val stroke = 1.dp.toPx()
+                val radius = (size.minDimension - stroke) / 2
+                if (tyre != null) {
+                    drawCircle(color = if (stint.isNew) tyre else tyre.copy(alpha = 0.35f), radius = radius)
+                }
+                drawCircle(
+                    color = rim,
+                    radius = radius,
+                    style = Stroke(
+                        width = stroke,
+                        pathEffect = if (stint.isNew) {
+                            null
+                        } else {
+                            PathEffect.dashPathEffect(floatArrayOf(2.dp.toPx(), 1.5.dp.toPx()))
+                        },
+                    ),
+                )
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stint.compound?.take(1) ?: "?",
+            fontSize = 9.sp,
+            lineHeight = 9.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (solid) Color.Black else MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+/** "2 · L15, L38": the count, then the lap of each stop when it is known. */
+@Composable
+private fun PitStopsValue(stops: Int, laps: List<Int>?) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    Text(
+        text = buildAnnotatedString {
+            withStyle(SpanStyle(fontFamily = MonoFamily, fontWeight = FontWeight.Medium)) {
+                append(stops.toString())
+            }
+            if (!laps.isNullOrEmpty()) {
+                withStyle(SpanStyle(color = muted, fontSize = 11.sp)) {
+                    append(laps.joinToString(separator = ", ", prefix = " · ") { "L$it" })
+                }
+            }
+        },
+        style = MaterialTheme.typography.bodyMedium,
+    )
 }
 
 @Composable

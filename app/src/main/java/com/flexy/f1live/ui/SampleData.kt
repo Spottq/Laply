@@ -9,6 +9,7 @@ import com.flexy.f1live.model.SectorTiming
 import com.flexy.f1live.model.SessionKind
 import com.flexy.f1live.model.SessionStatus
 import com.flexy.f1live.model.TrackFlag
+import com.flexy.f1live.model.TyreStint
 
 /** Hardcoded fixtures for @Preview only. Values mirror docs/subscribe_snapshot.json. */
 object SampleData {
@@ -38,6 +39,7 @@ object SampleData {
         knockedOut: Boolean = false,
         retired: Boolean = false,
         tyre: String? = null,
+        stints: List<TyreStint> = emptyList(),
     ) = DriverTiming(
         position = position,
         racingNumber = number,
@@ -62,13 +64,19 @@ object SampleData {
         numberOfLaps = 9,
         numberOfPitStops = 0,
         tyreCompound = tyre,
+        stints = stints,
     )
 
     val drivers: List<DriverTiming> = listOf(
         driver(1, "10", "GAS", "Pierre", "Gasly", "Alpine", "00A1E8", "fr", "PIEGAS01",
             "1:22.612", "", "",
             listOf(Triple("26.104", true, true), Triple("30.216", true, false), Triple("26.292", true, false)),
-            tyre = "SOFT"),
+            tyre = "SOFT",
+            stints = listOf(
+                TyreStint("SOFT", isNew = true, laps = 3),
+                TyreStint("SOFT", isNew = false, laps = 3),
+                TyreStint("SOFT", isNew = true, laps = 2),
+            )),
         driver(2, "3", "VER", "Max", "Verstappen", "Red Bull Racing", "4781D7", "nl", "MAXVER01",
             "1:22.631", "+0.019", "+0.019",
             listOf(Triple("26.180", true, false), Triple("30.147", true, true), Triple("26.304", false, false)),
