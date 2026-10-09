@@ -145,10 +145,12 @@ private fun StandingsList(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    // The points left are a race win and a sprint win per round, which is the
-                    // drivers' fight only: a team scores for both its cars.
-                    val titleSummary = uiState.titleFight?.summary
-                    if (uiState.tab == StandingsTab.Drivers && titleSummary != null) {
+                    // Each tab its own points left: a team scores with both its cars.
+                    val titleSummary = when (uiState.tab) {
+                        StandingsTab.Drivers -> uiState.titleFight?.summary
+                        StandingsTab.Constructors -> uiState.constructorsFight?.summary
+                    }
+                    if (titleSummary != null) {
                         Text(
                             text = titleSummary,
                             style = MaterialTheme.typography.bodySmall,
@@ -206,12 +208,27 @@ private fun StandingsList(
                     }
                 }
 
-                StandingsTab.Constructors -> items(
-                    items = uiState.constructors,
-                    key = { "c" + it.position + it.constructorId },
-                    contentType = { "constructor" },
-                ) { team ->
-                    ConstructorStandingRow(team, uiState.constructorLeaderPoints)
+                StandingsTab.Constructors -> {
+                    val cut = uiState.constructorsCut ?: uiState.constructors.size
+                    items(
+                        items = uiState.constructors.take(cut),
+                        key = { "c" + it.position + it.constructorId },
+                        contentType = { "constructor" },
+                    ) { team ->
+                        ConstructorStandingRow(team, uiState.constructorLeaderPoints)
+                    }
+                    if (cut < uiState.constructors.size) {
+                        item(key = "constructors-title-cut", contentType = "title-cut") {
+                            TitleCutLine(decided = uiState.constructorsFight?.decided == true)
+                        }
+                        items(
+                            items = uiState.constructors.drop(cut),
+                            key = { "c" + it.position + it.constructorId },
+                            contentType = { "constructor" },
+                        ) { team ->
+                            ConstructorStandingRow(team, uiState.constructorLeaderPoints)
+                        }
+                    }
                 }
             }
 
@@ -463,8 +480,8 @@ private fun PointsColumn(points: Double, wins: Int, onAccentSurface: Boolean) {
 }
 
 /**
- * Dashed rule under the last driver who can still win the title, captioned in the middle. With one
- * driver left above it the title is settled, and the caption says so.
+ * Dashed rule under the last driver or team that can still win the title, captioned in the middle.
+ * With one left above it the title is settled, and the caption says so.
  */
 @Composable
 private fun TitleCutLine(decided: Boolean) {
@@ -659,6 +676,13 @@ private fun StandingsPreview() {
                 constructors = listOf(
                     ConstructorStanding(1, 470.0, 9, "McLaren", "mclaren", "British"),
                     ConstructorStanding(2, 280.0, 3, "Ferrari", "ferrari", "Italian"),
+                ),
+                constructorsFight = TitleFight(
+                    racesLeft = 2,
+                    sprintsLeft = 1,
+                    contenders = 1,
+                    perRace = TitleFight.RACE_ONE_TWO,
+                    perSprint = TitleFight.SPRINT_ONE_TWO,
                 ),
             ),
             onSelectTab = {},

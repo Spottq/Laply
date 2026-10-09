@@ -30,6 +30,8 @@ data class StandingsUiState(
     val error: String? = null,
     /** Null until the calendar is in, or when it does not fit the standings. */
     val titleFight: TitleFight? = null,
+    /** The same for the constructors' championship. */
+    val constructorsFight: TitleFight? = null,
 ) {
     val isEmpty: Boolean get() = drivers.isEmpty() && constructors.isEmpty()
 
@@ -38,6 +40,10 @@ data class StandingsUiState(
      * win, or there is no calendar to tell.
      */
     val titleCut: Int? get() = titleFight?.contenders?.takeIf { it in 1 until drivers.size }
+
+    /** The same line in the constructors' table. */
+    val constructorsCut: Int?
+        get() = constructorsFight?.contenders?.takeIf { it in 1 until constructors.size }
 
     /** Leader's points, used to size the gap bars. Never zero, so the bars can divide by it. */
     val driverLeaderPoints: Double get() = drivers.firstOrNull()?.points?.takeIf { it > 0 } ?: 1.0
@@ -104,13 +110,20 @@ class StandingsViewModel : ViewModel() {
             // After the table, not before it: on a first launch the calendar may need the network
             // too, and the standings should not wait for it.
             val weekends = Graph.schedule.getSeason(season).getOrNull().orEmpty()
+            val now = System.currentTimeMillis()
             _uiState.update {
                 it.copy(
                     titleFight = TitleFight.of(
                         drivers = it.drivers,
                         afterRound = it.round,
                         weekends = weekends,
-                        nowUtcMillis = System.currentTimeMillis(),
+                        nowUtcMillis = now,
+                    ),
+                    constructorsFight = TitleFight.ofConstructors(
+                        teams = it.constructors,
+                        afterRound = it.round,
+                        weekends = weekends,
+                        nowUtcMillis = now,
                     ),
                 )
             }

@@ -136,6 +136,43 @@ class TitleFightTest {
         assertNull(TitleFight.of(table, afterRound = 20, weekends = calendar.take(12), nowUtcMillis = now))
     }
 
+    private fun team(position: Int, points: Double) = ConstructorStanding(
+        position = position,
+        points = points,
+        wins = 0,
+        name = "Team $position",
+        constructorId = "team_$position",
+        nationality = "",
+    )
+
+    @Test
+    fun `a team can score a one-two in every race and sprint left`() {
+        val teams = listOf(team(1, 626.0), team(2, 520.0), team(3, 450.0), team(4, 400.0))
+        val fight = TitleFight.ofConstructors(teams, afterRound = 20, weekends = calendar, nowUtcMillis = now)!!
+        // 4 races x 43 + 1 sprint x 15.
+        assertEquals(187, fight.pointsLeft)
+        assertEquals("4 races + 1 sprint left · 187 pts to play for", fight.summary)
+        // 450 + 187 still reaches 626; 400 + 187 does not.
+        assertEquals(3, fight.contenders)
+    }
+
+    @Test
+    fun `the constructors' fight is null when the drivers' would be`() {
+        assertNull(TitleFight.ofConstructors(emptyList(), afterRound = 0, weekends = calendar, nowUtcMillis = now))
+        assertNull(
+            TitleFight.ofConstructors(listOf(team(1, 100.0)), afterRound = 20, weekends = emptyList(), nowUtcMillis = now),
+        )
+    }
+
+    @Test
+    fun `races left read on their own for the widgets`() {
+        val fight = TitleFight.of(table, afterRound = 20, weekends = calendar, nowUtcMillis = now)!!
+        assertEquals("4 races + 1 sprint left", fight.racesLeftText)
+        assertEquals("108 pts to play for", fight.pointsLeftText)
+        val over = TitleFight.of(table, afterRound = 24, weekends = calendar, nowUtcMillis = now + 30 * day)!!
+        assertNull(over.racesLeftText)
+    }
+
     @Test
     fun `the table order decides the line, not the order it arrives in`() {
         val shuffled = listOf(driver(4, 198.0), driver(1, 324.0), driver(3, 241.0), driver(2, 302.0))
