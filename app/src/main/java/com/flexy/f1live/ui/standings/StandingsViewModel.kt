@@ -11,11 +11,29 @@ import com.flexy.f1live.data.TitleFight
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
 enum class StandingsTab { Drivers, Constructors }
+
+/**
+ * The table a standings widget asked for: set by MainActivity before it opens the Standings tab,
+ * taken once by the screen's view model, so a later visit keeps the tab the user picked.
+ */
+object StandingsTabRequests {
+    private val pending = MutableStateFlow<StandingsTab?>(null)
+
+    val requests: StateFlow<StandingsTab?> = pending.asStateFlow()
+
+    fun request(tab: StandingsTab) {
+        pending.value = tab
+    }
+
+    fun take(): StandingsTab? = pending.getAndUpdate { null }
+}
 
 data class StandingsUiState(
     val season: Int,
@@ -59,6 +77,11 @@ class StandingsViewModel : ViewModel() {
 
     init {
         load(refresh = false)
+        viewModelScope.launch {
+            StandingsTabRequests.requests.filterNotNull().collect {
+                StandingsTabRequests.take()?.let(::selectTab)
+            }
+        }
     }
 
     fun refresh() = load(refresh = true)

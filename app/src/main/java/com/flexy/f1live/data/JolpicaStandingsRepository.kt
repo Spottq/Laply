@@ -2,7 +2,11 @@ package com.flexy.f1live.data
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -50,6 +54,8 @@ data class Standings(
     val round: Int,
     val drivers: List<DriverStanding>,
     val constructors: List<ConstructorStanding>,
+    /** When this table came from the network; 0 for one stored before this was recorded. */
+    val fetchedAtMillis: Long = 0L,
 )
 
 /**
@@ -93,6 +99,14 @@ object JolpicaStandingsRepository {
     private val mutex = Mutex()
     private val cache = mutableMapOf<Int, Standings>()
 
+    private val _updates = MutableSharedFlow<Standings>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+
+    /** Every table fetched from the network, whoever asked for it: the home-screen widgets follow it. */
+    val updates: SharedFlow<Standings> = _updates.asSharedFlow()
+
     /** Memory, then disk. No network, no failure: null just means "nothing stored yet". */
     suspend fun cached(season: Int): Standings? {
         mutex.withLock { cache[season] }?.let { return it }
@@ -122,11 +136,13 @@ object JolpicaStandingsRepository {
                         round = drivers.round ?: constructors.round ?: 0,
                         drivers = drivers.items,
                         constructors = constructors.items,
+                        fetchedAtMillis = System.currentTimeMillis(),
                     )
                 }
             }
             mutex.withLock { cache[season] = standings }
             disk?.write(diskKey(season), Standings.serializer(), standings)
+            _updates.tryEmit(standings)
             standings
         }
     }

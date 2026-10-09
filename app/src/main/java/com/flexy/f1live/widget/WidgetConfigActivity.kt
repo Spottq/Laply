@@ -35,13 +35,15 @@ import com.flexy.f1live.settings.AppSettings
 import com.flexy.f1live.settings.ThemeMode
 import com.flexy.f1live.ui.settings.WidgetSettingsGroup
 import com.flexy.f1live.ui.theme.F1LiveTheme
+import com.flexy.f1live.widget.standings.StandingsWidgetUpdater
 
 /**
- * The widget's own settings screen: "Customize" on Pixel, "Settings" in One UI Home's long-press
+ * The widgets' own settings screen: "Customize" on Pixel, "Settings" in One UI Home's long-press
  * menu (android:configure + reconfigurable in the provider XML, semConfigureActivity on the
- * receiver). It holds the widget appearance options - circuit background and, on One UI 7+, the
- * blur style's on/off, opacity and tone (One UI Home blurs behind third-party widgets but passes
- * them no transparency setting of its own). They are global: every placed widget redraws at once.
+ * receiver), for the session widget and the standings widgets alike. It holds the widget appearance
+ * options - circuit background and, on One UI 7+, the blur style's on/off, opacity and tone (One UI
+ * Home blurs behind third-party widgets but passes them no transparency setting of its own). They
+ * are global: every placed widget redraws at once.
  *
  * configuration_optional means the launcher does not open this when the widget is added; if it is
  * opened then anyway, the result is OK from the start, so backing out never removes the widget.
@@ -123,6 +125,7 @@ class WidgetConfigActivity : ComponentActivity() {
     /** Every setting already redrew the widgets as it changed; one more refresh costs nothing. */
     private fun done() {
         WidgetUpdater.refresh(applicationContext)
+        StandingsWidgetUpdater.refresh(applicationContext, fetch = false)
         setResult(RESULT_OK, resultIntent())
         finish()
     }

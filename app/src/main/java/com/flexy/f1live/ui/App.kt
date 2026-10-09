@@ -81,6 +81,7 @@ import com.flexy.f1live.ui.results.ResultsScreen
 import com.flexy.f1live.ui.schedule.ScheduleScreen
 import com.flexy.f1live.ui.settings.SettingsScreen
 import com.flexy.f1live.ui.standings.StandingsScreen
+import kotlinx.coroutines.flow.first
 
 private enum class Destination(
     val route: String,
@@ -116,12 +117,26 @@ private fun NavBackStackEntry.isTopLevel(): Boolean =
 /**
  * [openLiveRequest] changes every time a home-screen widget is tapped while the app is already
  * open; the app then returns to the Live tab (a fresh launch starts there anyway).
+ * [openStandingsRequest] changes with every standings widget tap, including the one that started
+ * the app; the app then opens the Standings tab, whose table the widget picked beforehand.
  */
 @Composable
-fun App(openLiveRequest: Int = 0) {
+fun App(openLiveRequest: Int = 0, openStandingsRequest: Int = 0) {
     val navController = rememberNavController()
     LaunchedEffect(openLiveRequest) {
         if (openLiveRequest > 0) navController.popBackStack(Destination.Live.route, inclusive = false)
+    }
+    LaunchedEffect(openStandingsRequest) {
+        if (openStandingsRequest > 0) {
+            // On a cold start the graph is only set once the NavHost is laid out: its first
+            // back stack entry says it is ready.
+            navController.currentBackStackEntryFlow.first()
+            navController.navigate(Destination.Standings.route) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
     }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination

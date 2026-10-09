@@ -27,6 +27,7 @@ import com.flexy.f1live.model.RaceWeekend
 import com.flexy.f1live.settings.AppSettings
 import com.flexy.f1live.settings.ThemeMode
 import com.flexy.f1live.ui.components.flagCdnUrl
+import com.flexy.f1live.widget.standings.StandingsWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -446,7 +447,8 @@ object WidgetUpdater {
         if (!due) return
         val manager = GlanceAppWidgetManager(app)
         var allPublished = true
-        for (receiver in receivers) {
+        // The standings widgets' entries too: one schedule for every preview of the app.
+        for (receiver in receivers + StandingsWidgetUpdater.receivers) {
             val result = runCatching {
                 manager.setWidgetPreviews(
                     receiver.kotlin,

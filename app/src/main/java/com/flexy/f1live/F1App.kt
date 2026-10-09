@@ -31,6 +31,7 @@ import com.flexy.f1live.settings.AppSettings
 import com.flexy.f1live.ui.components.flagCdnUrl
 import com.flexy.f1live.update.UpdateCheckWorker
 import com.flexy.f1live.widget.WidgetUpdater
+import com.flexy.f1live.widget.standings.StandingsWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -99,6 +100,8 @@ class F1App : Application(), SingletonImageLoader.Factory {
                 AutoFollow.reschedule(this)
                 WidgetUpdater.refresh(this)
                 WidgetUpdater.publishPreviewsIfDue(this)
+                // The races left, and so the title lines and the checks after each race.
+                StandingsWidgetUpdater.refresh(this)
             },
         )
         // The official feed is CloudFront-blocked on some networks; ESPN covers those, and the
@@ -134,6 +137,8 @@ class F1App : Application(), SingletonImageLoader.Factory {
 
         // Home-screen widgets: redraw on a colour-source switch, keep picker previews current.
         WidgetUpdater.attach(this)
+        // Standings widgets: redraw on a new table fetched by the app and on appearance changes.
+        StandingsWidgetUpdater.attach(this)
 
         // Daily GitHub release check: scheduled while the setting is on, cancelled when it is
         // turned off. KEEP makes the re-enqueue on every process start a no-op.
