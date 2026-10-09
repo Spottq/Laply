@@ -147,6 +147,11 @@ data class LiveSessionState(
     val raceControl: List<RaceControlMessage>, // newest last
     val lastUpdateUtcMillis: Long,
     val source: LiveSource = LiveSource.NONE,
+    /**
+     * The circuit's offset from UTC in minutes (F1's `SessionInfo.GmtOffset`), null when the feed
+     * does not say. Race control writes clock times in track time; this turns them into ours.
+     */
+    val trackUtcOffsetMinutes: Int? = null,
 ) {
     companion object {
         val EMPTY = LiveSessionState(

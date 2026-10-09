@@ -2,6 +2,7 @@ package com.flexy.f1live.live
 
 import com.flexy.f1live.model.DriverTiming
 import com.flexy.f1live.model.LiveSessionState
+import com.flexy.f1live.model.SessionBreak
 import com.flexy.f1live.model.SessionKind
 import com.flexy.f1live.model.SessionStatus
 import com.flexy.f1live.model.TrackFlag
@@ -143,20 +144,30 @@ object LiveNotificationBuilder {
 
     // ---------------------------------------------------------------- pieces
 
-    /** "Italy · Race · Lap 4/53" - or "Italy · Qualifying · Q3" outside a race. */
+    /**
+     * "Italy · Race · Lap 4/53" - or "Italy · Qualifying · Q3" outside a race; between qualifying
+     * parts the part says it is over ("Italy · Qualifying · Q1 FINISHED"). While race control holds
+     * the session up - any session's delayed start, the break before a delayed part, a red flag
+     * awaiting its restart - the whole title is race control's own announcement, with its clock
+     * time in the viewer's time zone ("SQ2 WILL START AT 15:55").
+     */
     fun title(state: LiveSessionState): String {
+        SessionBreak.delayText(state)?.takeIf { it.isNotBlank() }?.let { return it }
         val place = state.meetingCountry.ifBlank { state.meetingName }.ifBlank { state.circuitShortName }
         val session = state.sessionName.ifBlank { defaultSessionName(state.sessionKind) }
-        val part = state.sessionPart
-            ?.takeIf { it in 1..3 && isQualifyingLike(state.sessionKind) }
-            ?.let { "Q$it" }
+        val part = SessionBreak.partLabel(state)
+        val betweenParts = SessionBreak.isBetweenParts(state)
         return listOfNotNull(
             place.takeIf { it.isNotBlank() },
             session.takeIf { it.isNotBlank() },
-            part,
+            if (betweenParts && part != null) "$part $FINISHED_LABEL" else part,
             lapLabel(state),
-            // Once the chequered flag is out the track flag is history: the slot says FINISHED.
-            if (isFinished(state)) FINISHED_LABEL else flagLabel(state.trackFlag),
+            when {
+                // Once the chequered flag is out the track flag is history: the slot says FINISHED.
+                isFinished(state) -> FINISHED_LABEL
+                betweenParts -> null
+                else -> flagLabel(state.trackFlag)
+            },
         ).joinToString(DOT).ifBlank { "Laply" }
     }
 

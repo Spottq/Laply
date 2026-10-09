@@ -34,9 +34,11 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.DeviceThermostat
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Umbrella
 import androidx.compose.material.icons.filled.WaterDrop
@@ -78,6 +80,7 @@ import com.flexy.f1live.model.DriverTiming
 import com.flexy.f1live.model.LiveSessionState
 import com.flexy.f1live.model.RaceControlMessage
 import com.flexy.f1live.model.SectorTiming
+import com.flexy.f1live.model.SessionBreak
 import com.flexy.f1live.model.SessionKind
 import com.flexy.f1live.model.SessionStatus
 import com.flexy.f1live.model.TrackFlag
@@ -98,8 +101,7 @@ import com.flexy.f1live.ui.components.TyreDot
 import com.flexy.f1live.ui.components.trackFlagColor
 import com.flexy.f1live.ui.components.primaryTimeOf
 import com.flexy.f1live.ui.components.rememberFollowToggle
-import com.flexy.f1live.ui.components.flagColor
-import com.flexy.f1live.ui.components.formatClock
+import com.flexy.f1live.ui.components.RaceControlRow
 import com.flexy.f1live.ui.components.statusLabel
 import com.flexy.f1live.ui.components.rememberTeamColor
 import com.flexy.f1live.ui.theme.F1LivePreviewTheme
@@ -114,6 +116,7 @@ fun LiveScreen(
     modifier: Modifier = Modifier,
     viewModel: LiveViewModel = viewModel(),
     onOpenSchedule: (() -> Unit)? = null,
+    onOpenRaceControl: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isFollowing by viewModel.isFollowing.collectAsStateWithLifecycle()
@@ -143,6 +146,7 @@ fun LiveScreen(
         onRetry = viewModel::retry,
         onToggleFollow = { setFollowing(!isFollowing) },
         onOpenSchedule = onOpenSchedule,
+        onOpenRaceControl = onOpenRaceControl,
         contentPadding = contentPadding,
         modifier = modifier,
         circuit = circuit,
@@ -164,9 +168,6 @@ private val MediumPanes = PaneSpec(margin = 16.dp, gutter = 16.dp, leftFraction 
 /** 840dp and up: tablets in landscape. */
 private val ExpandedPanes = PaneSpec(margin = 24.dp, gutter = 24.dp, leftFraction = 0.45f)
 
-/** Below this the left pane switches the podium and the next-round card to their compact forms. */
-private val CompactPaneWidth = 360.dp
-
 @Composable
 fun LiveContent(
     state: LiveSessionState,
@@ -178,6 +179,8 @@ fun LiveContent(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
     onOpenSchedule: (() -> Unit)? = null,
+    /** Opens the full race control log; null hides the button. */
+    onOpenRaceControl: (() -> Unit)? = null,
     /** Outline of the meeting's circuit; only the two-pane layout shows it. */
     circuit: CircuitOutline? = null,
     /** Forecast of the weekend coming up, for the next-round card. */
@@ -216,13 +219,12 @@ fun LiveContent(
                 onRetry = onRetry,
                 onToggleFollow = onToggleFollow,
                 onOpenSchedule = onOpenSchedule,
+                onOpenRaceControl = onOpenRaceControl,
                 contentPadding = contentPadding,
             )
         } else {
-            val leftWidth = maxWidth * panes.leftFraction - panes.margin - panes.gutter / 2
             LiveTwoPanes(
                 panes = panes,
-                compact = leftWidth < CompactPaneWidth,
                 state = state,
                 isRace = isRace,
                 isFollowing = isFollowing,
@@ -235,6 +237,7 @@ fun LiveContent(
                 onRetry = onRetry,
                 onToggleFollow = onToggleFollow,
                 onOpenSchedule = onOpenSchedule,
+                onOpenRaceControl = onOpenRaceControl,
                 contentPadding = contentPadding,
             )
         }
@@ -255,6 +258,7 @@ private fun LiveSingleColumn(
     onRetry: () -> Unit,
     onToggleFollow: () -> Unit,
     onOpenSchedule: (() -> Unit)?,
+    onOpenRaceControl: (() -> Unit)?,
     contentPadding: PaddingValues,
 ) {
     LazyColumn(
@@ -287,7 +291,7 @@ private fun LiveSingleColumn(
             onRetry = onRetry,
             horizontal = CardHorizontal,
         )
-        raceControlSection(state, horizontal = CardHorizontal)
+        raceControlSection(state, horizontal = CardHorizontal, onOpenAll = onOpenRaceControl)
         if (nextRoundLast) {
             nextRoundSection(
                 nextSession = nextSession,
@@ -301,14 +305,14 @@ private fun LiveSingleColumn(
 }
 
 /**
- * Tablets and unfolded foldables: the header, the next round, the circuit and the conditions on
- * the left; the classification and race control on the right. Each pane scrolls on its own, so the
- * header stays put however long the classification is.
+ * Tablets and unfolded foldables: the header, the circuit, the conditions and race control on the
+ * left; the classification with the next round under it on the right. Each pane scrolls on its
+ * own, so the header and the latest race control messages stay in view however long the
+ * classification is.
  */
 @Composable
 private fun LiveTwoPanes(
     panes: PaneSpec,
-    compact: Boolean,
     state: LiveSessionState,
     isRace: Boolean,
     isFollowing: Boolean,
@@ -321,6 +325,7 @@ private fun LiveTwoPanes(
     onRetry: () -> Unit,
     onToggleFollow: () -> Unit,
     onOpenSchedule: (() -> Unit)?,
+    onOpenRaceControl: (() -> Unit)?,
     contentPadding: PaddingValues,
 ) {
     val direction = LocalLayoutDirection.current
@@ -340,29 +345,9 @@ private fun LiveTwoPanes(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             headerSection(state, isRace, isFollowing, onToggleFollow, inPane = true)
-            // While a session runs the circuit and conditions are what matter, and the next round
-            // waits at the bottom; between sessions, what comes next leads.
-            if (state.isLive) {
-                circuitSection(state, circuit)
-                conditionsSection(state)
-                nextRoundSection(
-                    nextSession = nextSession,
-                    weather = nextWeather,
-                    onOpenSchedule = onOpenSchedule,
-                    modifier = Modifier,
-                    compact = compact,
-                )
-            } else {
-                nextRoundSection(
-                    nextSession = nextSession,
-                    weather = nextWeather,
-                    onOpenSchedule = onOpenSchedule,
-                    modifier = Modifier,
-                    compact = compact,
-                )
-                circuitSection(state, circuit)
-                conditionsSection(state)
-            }
+            circuitSection(state, circuit)
+            conditionsSection(state)
+            raceControlSection(state, horizontal = 0.dp, onOpenAll = onOpenRaceControl)
         }
         LazyColumn(
             modifier = Modifier.weight(1f - panes.leftFraction).fillMaxHeight(),
@@ -382,7 +367,13 @@ private fun LiveTwoPanes(
                 onRetry = onRetry,
                 horizontal = 0.dp,
             )
-            raceControlSection(state, horizontal = 0.dp)
+            // The weekend coming up closes the right pane, under the drivers.
+            nextRoundSection(
+                nextSession = nextSession,
+                weather = nextWeather,
+                onOpenSchedule = onOpenSchedule,
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
     }
 }
@@ -485,10 +476,14 @@ private fun LazyListScope.classificationSection(
     }
 }
 
-private fun LazyListScope.raceControlSection(state: LiveSessionState, horizontal: Dp) {
+private fun LazyListScope.raceControlSection(
+    state: LiveSessionState,
+    horizontal: Dp,
+    onOpenAll: (() -> Unit)?,
+) {
     if (state.raceControl.isEmpty()) return
     item(key = "race-control", contentType = "race-control") {
-        RaceControlSection(messages = state.raceControl, horizontal = horizontal)
+        RaceControlSection(messages = state.raceControl, horizontal = horizontal, onOpenAll = onOpenAll)
     }
 }
 
@@ -585,6 +580,8 @@ private fun LiveHeader(
                 color = MaterialTheme.colorScheme.onSurface,
             )
 
+            DelayNotice(state)
+
             if (hasData) {
                 Spacer(Modifier.height(20.dp))
                 TopThreeRow(state.topThree, isRace)
@@ -624,6 +621,48 @@ private fun LiveHeader(
     }
 }
 
+/**
+ * "SQ2 delayed" under the headline while race control holds the session up - between qualifying
+ * parts, before a delayed start, or ahead of a red-flag restart - with its own wording below.
+ */
+@Composable
+private fun DelayNotice(state: LiveSessionState) {
+    val label = SessionBreak.delayLabel(state) ?: return
+    val message = SessionBreak.delayText(state).orEmpty()
+    Spacer(Modifier.height(10.dp))
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.tertiaryContainer)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.Schedule,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+        }
+        if (message.isNotBlank()) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
 private fun headlineFor(state: LiveSessionState, isRace: Boolean, hasData: Boolean): String {
     if (!hasData && state.sessionName.isBlank()) return "No live session"
     val parts = mutableListOf<String>()
@@ -636,7 +675,7 @@ private fun headlineFor(state: LiveSessionState, isRace: Boolean, hasData: Boole
         if (lap != null && total != null) parts += "Lap ${lap.coerceAtMost(total)}/$total"
         else if (lap != null) parts += "Lap $lap"
     } else {
-        state.sessionPart?.let { parts += "Q$it" }
+        SessionBreak.partLabel(state)?.let { parts += it }
     }
     statusLabel(state.status).takeIf { it.isNotBlank() }?.let { parts += it }
     return parts.joinToString(" · ").ifBlank { "No live session" }
@@ -804,55 +843,51 @@ private fun EmptySessionCard(errorText: String?, onRetry: () -> Unit, horizontal
     }
 }
 
+/** The latest [RaceControlPreviewCount] messages; the full log for the session is one tap away. */
 @Composable
-private fun RaceControlSection(messages: List<RaceControlMessage>, horizontal: Dp) {
+private fun RaceControlSection(
+    messages: List<RaceControlMessage>,
+    horizontal: Dp,
+    onOpenAll: (() -> Unit)?,
+) {
     Column(modifier = Modifier.padding(horizontal = horizontal, vertical = 16.dp)) {
-        Text(
-            text = "Race control",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 4.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.race_control),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
+            if (onOpenAll != null) {
+                TextButton(onClick = onOpenAll) {
+                    Text(stringResource(R.string.race_control_all))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainer)
+                .then(if (onOpenAll != null) Modifier.clickable(onClick = onOpenAll) else Modifier)
                 .padding(vertical = 4.dp),
         ) {
-            messages.asReversed().take(10).forEach { message ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .padding(top = 5.dp)
-                            .size(8.dp)
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(flagColor(message.flag)),
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = message.message,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        val stamp = formatClock(message.utcMillis)
-                        if (stamp.isNotBlank()) {
-                            Text(
-                                text = stamp,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
+            messages.asReversed().take(RaceControlPreviewCount).forEach { message ->
+                RaceControlRow(message)
             }
         }
     }
 }
+
+private const val RaceControlPreviewCount = 10
 
 // ---------------------------------------------------------------- large-screen extras
 

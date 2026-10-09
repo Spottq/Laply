@@ -22,6 +22,7 @@ import com.flexy.f1live.data.LiveTimingClient
 import com.flexy.f1live.model.DriverTiming
 import com.flexy.f1live.model.LiveSessionState
 import com.flexy.f1live.model.LiveSource
+import com.flexy.f1live.model.SessionBreak
 import com.flexy.f1live.model.SessionKind
 import com.flexy.f1live.model.SessionStatus
 import com.flexy.f1live.settings.AppSettings
@@ -312,16 +313,36 @@ class LiveUpdateService : Service() {
      */
     private fun contentFor(state: LiveSessionState): LiveNotificationBuilder.Content {
         if (sawLive) return LiveNotificationBuilder.build(state, connectingText())
-        val base = LiveNotificationBuilder.build(LiveSessionState.EMPTY, waitingText())
-        val label = target?.label?.takeIf { it.isNotBlank() } ?: return base
+        val base = LiveNotificationBuilder.build(LiveSessionState.EMPTY, waitingText(state))
+        // A delayed start: race control's announcement is the title, as it is once under way.
+        val label = SessionBreak.delayText(state)?.takeIf { delayAnnounced(state) }
+            ?: target?.label?.takeIf { it.isNotBlank() }
+            ?: return base
         return base.copy(title = label, summary = base.summary + "|" + label)
     }
 
-    /** "Starts at 15:00 · waiting for timing"; plain "Connecting…" without a scheduled session. */
-    private fun waitingText(): String {
-        val start = target?.startUtcMillis ?: return connectingText()
-        val time = DateFormat.getTimeFormat(this).format(Date(start))
-        return getString(R.string.live_notif_waiting, time)
+    /**
+     * "Starts at 15:00 · waiting for timing", or "Start delayed (was 15:00) · waiting for timing"
+     * once race control has announced it for this very session; plain "Connecting…" without a
+     * scheduled session.
+     */
+    private fun waitingText(state: LiveSessionState): String {
+        val session = target ?: return connectingText()
+        val time = DateFormat.getTimeFormat(this).format(Date(session.startUtcMillis))
+        return getString(
+            if (delayAnnounced(state)) R.string.live_notif_delayed else R.string.live_notif_waiting,
+            time,
+        )
+    }
+
+    /** Race control has announced a delay for the scheduled session itself (not the previous one). */
+    private fun delayAnnounced(state: LiveSessionState): Boolean {
+        val session = target ?: return false
+        return state.source != LiveSource.CACHE &&
+            state.source != LiveSource.NONE &&
+            session.kind != SessionKind.UNKNOWN &&
+            state.sessionKind == session.kind &&
+            SessionBreak.delayNotice(state) != null
     }
 
     /**
@@ -351,7 +372,12 @@ class LiveUpdateService : Service() {
         if (!sawLive) {
             // Still waiting: end-of-session statuses here are the *previous* session's, except
             // when the network says the very session we are waiting for is already over.
-            val expired = System.currentTimeMillis() >= waitDeadline
+            // An announced delay keeps the run waiting past the usual deadline, up to the end of
+            // the session's window: a rain delay can easily outlast it.
+            val now = System.currentTimeMillis()
+            val held = delayAnnounced(state) &&
+                target?.let { now < AutoFollowPlanner.windowEnd(it) } == true
+            val expired = now >= waitDeadline && !held
             if (expired || targetAlreadyOver(state)) quit()
             return
         }
@@ -427,8 +453,21 @@ class LiveUpdateService : Service() {
         return LiveNotificationBuilder.isSessionOver(state.status)
     }
 
-    private fun isNetworkLive(state: LiveSessionState): Boolean =
-        state.isLive && state.source != LiveSource.CACHE
+    /**
+     * The session is under way: running, or - for the scheduled session itself - in the break
+     * between qualifying parts, when the feed reads FINISHED for Q1/Q2 (and holds it through a
+     * delayed restart). A run started during that break would otherwise wait for a "live" status
+     * that does not come until the next part, give up, and miss the rest of the session.
+     */
+    private fun isNetworkLive(state: LiveSessionState): Boolean {
+        if (state.source == LiveSource.CACHE || state.source == LiveSource.NONE) return false
+        if (state.isLive) return true
+        val session = target ?: return false
+        return session.kind != SessionKind.UNKNOWN &&
+            state.sessionKind == session.kind &&
+            state.status == SessionStatus.FINISHED &&
+            !LiveNotificationBuilder.isFinished(state)
+    }
 
     // ------------------------------------------------------------------ notifications
 

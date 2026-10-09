@@ -66,8 +66,19 @@ object LiveStateParser {
             raceControl = parseRaceControl(root),
             lastUpdateUtcMillis = nowUtcMillis,
             source = LiveSource.F1_LIVE_TIMING,
+            trackUtcOffsetMinutes = utcOffsetMinutesOf(sessionInfo?.string("GmtOffset")),
         )
     }
+
+    /** "08:00:00" -> 480, "-04:00:00" -> -240; null for anything else. */
+    fun utcOffsetMinutesOf(raw: String?): Int? {
+        val match = OffsetPattern.matchEntire(raw?.trim().orEmpty()) ?: return null
+        val (sign, hours, minutes) = match.destructured
+        val total = hours.toInt() * 60 + minutes.toInt()
+        return if (sign == "-") -total else total
+    }
+
+    private val OffsetPattern = Regex("""([+-]?)(\d{1,2}):(\d{2})(?::\d{2})?""")
 
     private val NO_RAIN = setOf("", "0", "0.0", "false")
 

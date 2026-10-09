@@ -391,6 +391,18 @@ class CompositeLiveTimingClientTest {
         assertEquals(live, preferState(live, cached))
     }
 
+    @Test
+    fun `the official feed always takes over from the disk copy`() {
+        // A qualifying break: the stored copy of the part just finished is the richer one, but the
+        // live feed of the same session must still win, or the Live Update never sees it.
+        val thinLive = f1State.copy(
+            meetingName = cachedState.meetingName,
+            status = SessionStatus.FINISHED,
+            drivers = listOf(driver(1, "RUS")),
+        )
+        assertEquals(thinLive, preferState(cachedState, thinLive))
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private fun awaitUntil(what: String, timeoutMs: Long = 2_000L, condition: () -> Boolean) {

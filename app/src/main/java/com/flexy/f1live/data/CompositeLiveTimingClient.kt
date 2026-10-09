@@ -309,9 +309,9 @@ private fun logWarning(message: String, error: Throwable) {
  *  3. a live session beats a finished one, and is only displaced by a finished one when the network
  *     reports that very session as over - the chequered flag. Some other finished session (ESPN's
  *     last completed one while its live roster blinks out, the disk cache) never ends it;
- *  4. the disk cache yields to the network - but only to a *different* session, or to one that
- *     actually knows more (lap times, gaps, more cars), so a thinner ESPN copy of the same
- *     classification does not overwrite a richer stored one;
+ *  4. the disk cache yields to the official feed always, and to any other network source when it
+ *     is a *different* session or one that actually knows more (lap times, gaps, more cars), so a
+ *     thinner ESPN copy of the same classification does not overwrite a richer stored one;
  *  5. the cache never overwrites something the network produced.
  */
 internal fun preferState(current: LiveSessionState, next: LiveSessionState): LiveSessionState {
@@ -325,6 +325,11 @@ internal fun preferState(current: LiveSessionState, next: LiveSessionState): Liv
     }
     if (next.source == LiveSource.CACHE) return current
     if (current.source == LiveSource.CACHE) {
+        // The official feed is the full record of the session it is on: it always takes over from
+        // the disk copy. Only a thinner source (ESPN has no sector or lap cells) has to prove it
+        // knows at least as much - otherwise, in a qualifying break, the stored copy of the part
+        // just finished outscored the next part's half-filled timing and stayed on screen.
+        if (next.source == LiveSource.F1_LIVE_TIMING) return next
         val sameSession = isSameSession(current, next)
         return if (!sameSession || informationScore(next) >= informationScore(current)) next else current
     }

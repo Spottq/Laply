@@ -80,8 +80,7 @@ class LiveViewModel : ViewModel() {
     /** Called when the Live screen becomes visible. */
     fun onScreenVisible() {
         _lastError.value = null
-        LiveUpdateController.uiActive = true
-        Graph.liveTiming.start()
+        LiveUpdateController.attachUi()
         refreshNextSessionIfStale()
         refreshWeather()
     }
@@ -116,8 +115,7 @@ class LiveViewModel : ViewModel() {
      * singleton: while the Live Update runs, the foreground service owns it and it must stay alive.
      */
     fun onScreenGone() {
-        LiveUpdateController.uiActive = false
-        if (!LiveUpdateController.serviceRunning.value) Graph.liveTiming.stop()
+        LiveUpdateController.detachUi()
     }
 
     fun retry() {

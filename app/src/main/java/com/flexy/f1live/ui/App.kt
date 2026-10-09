@@ -76,6 +76,7 @@ import androidx.navigation.compose.rememberNavController
 import com.flexy.f1live.R
 import com.flexy.f1live.model.SessionKind
 import com.flexy.f1live.ui.live.LiveScreen
+import com.flexy.f1live.ui.racecontrol.RaceControlScreen
 import com.flexy.f1live.ui.results.ResultsScreen
 import com.flexy.f1live.ui.schedule.ScheduleScreen
 import com.flexy.f1live.ui.settings.SettingsScreen
@@ -99,6 +100,9 @@ private const val ToolbarScrollThreshold = 2f
 
 /** App settings: a detail screen reached from the toolbar's trailing gear, not a fourth tab. */
 private const val SettingsRoute = "settings"
+
+/** Every race control message of the live session, opened from the Live tab. */
+private const val RaceControlRoute = "race-control"
 
 /** `results/{season}/{round}/{kind}` - a finished session opened from the schedule. */
 private const val ResultsRoute = "results/{season}/{round}/{kind}"
@@ -224,7 +228,15 @@ fun App(openLiveRequest: Int = 0) {
                                     restoreState = true
                                 }
                             },
+                            onOpenRaceControl = {
+                                navController.navigate(RaceControlRoute) { launchSingleTop = true }
+                            },
                         )
+                    }
+                }
+                composable(RaceControlRoute) { entry ->
+                    NavMotionScreen(motion, screenBackground, fadeTop, fadeBottom) {
+                        RaceControlScreen(onBack = { popFrom(entry) })
                     }
                 }
                 composable(Destination.Schedule.route) {

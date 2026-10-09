@@ -1,9 +1,11 @@
 package com.flexy.f1live.live
 
 import android.content.Context
+import com.flexy.f1live.data.Graph
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * UI-facing switch for the "Follow" button. Two states that used to be one, and are not the same:
@@ -22,11 +24,26 @@ object LiveUpdateController {
     val followEnabled: StateFlow<Boolean> get() = FollowPreferences.enabled
 
     /**
-     * True while the Live screen is on screen. The screen and the service share one feed
-     * connection; whoever goes away last is the one that closes it.
+     * Screens showing the live feed right now (the Live tab, the race control log). They and the
+     * service share one feed connection; whoever goes away last is the one that closes it. A count
+     * rather than a flag: opening the race control log from the Live tab enters the new screen
+     * before the old one leaves, and the Live tab's goodbye must not close the feed under it.
      */
-    @Volatile
-    var uiActive: Boolean = false
+    private val uiUsers = AtomicInteger(0)
+
+    val uiActive: Boolean get() = uiUsers.get() > 0
+
+    /** A screen showing the feed appeared: make sure it is connected. */
+    fun attachUi() {
+        uiUsers.incrementAndGet()
+        runCatching { Graph.liveTiming.start() }
+    }
+
+    /** A screen showing the feed went away: close it if nobody else needs it. */
+    fun detachUi() {
+        if (uiUsers.decrementAndGet() < 0) uiUsers.set(0)
+        if (!uiActive && !serviceRunning.value) runCatching { Graph.liveTiming.stop() }
+    }
 
     fun follow(context: Context) = AutoFollow.setEnabled(context, true)
     fun unfollow(context: Context) = AutoFollow.setEnabled(context, false)
