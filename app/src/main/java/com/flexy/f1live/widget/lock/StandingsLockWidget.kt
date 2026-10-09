@@ -129,7 +129,7 @@ object StandingsLockWidget {
     }
 
     private fun heightDp(manager: AppWidgetManager, ids: IntArray): Int =
-        ids.mapNotNull { id ->
+        ids.asList().mapNotNull { id ->
             runCatching { manager.getAppWidgetOptions(id) }.getOrNull()
                 ?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
                 ?.takeIf { it > 0 }
