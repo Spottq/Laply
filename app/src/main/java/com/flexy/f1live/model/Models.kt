@@ -41,6 +41,9 @@ data class RaceWeekend(
     /** Circuit's Wikipedia page, e.g. "https://en.wikipedia.org/wiki/Circuit_Zandvoort"; the
      *  fallback source for a track map when F1's media CDN has none. */
     val circuitWikiUrl: String? = null,
+    /** Where the circuit is, for the weekend forecast; null in calendars cached before 1.1. */
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 ) {
     val raceStartUtcMillis: Long? get() = sessions.firstOrNull { it.kind == SessionKind.RACE }?.startUtcMillis
 }

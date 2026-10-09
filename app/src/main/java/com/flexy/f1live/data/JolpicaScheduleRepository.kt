@@ -56,10 +56,15 @@ class JolpicaScheduleRepository(
         if (!refresh) {
             mutex.withLock { cache[season] }?.let { return Result.success(it) }
             readDisk(season)?.let { stored ->
-                mutex.withLock { cache[season] = stored }
-                // Still refresh in the background? No: a calendar that is already on disk is good
-                // enough for this launch, and `refresh = true` (pull to refresh) covers the rest.
-                return Result.success(stored)
+                // A calendar stored before the circuits had coordinates is fetched once more, so
+                // the weekend forecast has somewhere to look; offline, the stored one still wins.
+                if (stored.all { it.latitude != null }) {
+                    mutex.withLock { cache[season] = stored }
+                    // Still refresh in the background? No: a calendar that is already on disk is
+                    // good enough for this launch, and `refresh = true` (pull to refresh) covers
+                    // the rest.
+                    return Result.success(stored)
+                }
             }
         }
         return runCatching {
@@ -130,6 +135,8 @@ class JolpicaScheduleRepository(
             countryCode = countryCodeOf(country),
             sessions = sessions,
             circuitWikiUrl = circuit?.url?.takeIf { it.isNotBlank() },
+            latitude = location?.lat?.toDoubleOrNull(),
+            longitude = location?.long?.toDoubleOrNull(),
         )
     }
 
@@ -199,7 +206,12 @@ class JolpicaScheduleRepository(
     )
 
     @Serializable
-    private class LocationDto(val locality: String? = null, val country: String? = null)
+    private class LocationDto(
+        val locality: String? = null,
+        val country: String? = null,
+        val lat: String? = null,
+        val long: String? = null,
+    )
 
     @Serializable
     private class DateTimeDto(val date: String? = null, val time: String? = null)

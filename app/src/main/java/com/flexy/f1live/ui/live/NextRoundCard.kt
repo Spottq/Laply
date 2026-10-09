@@ -1,5 +1,6 @@
 package com.flexy.f1live.ui.live
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,6 +34,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,20 +42,36 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.flexy.f1live.R
 import com.flexy.f1live.data.CircuitMaps
+import com.flexy.f1live.model.DayForecast
 import com.flexy.f1live.model.RaceWeekend
+import com.flexy.f1live.model.SessionForecast
+import com.flexy.f1live.model.WeekendForecast
+import com.flexy.f1live.model.WeekendWeather
 import com.flexy.f1live.ui.SampleData
 import com.flexy.f1live.ui.components.CountryFlag
-import com.flexy.f1live.ui.components.formatDateRange
+import com.flexy.f1live.ui.components.RainChance
+import com.flexy.f1live.ui.components.WeatherIcon
+import com.flexy.f1live.ui.components.formatDegrees
 import com.flexy.f1live.ui.components.formatCountdown
+import com.flexy.f1live.ui.components.formatDate
+import com.flexy.f1live.ui.components.formatDateRange
 import com.flexy.f1live.ui.components.formatDayTime
 import com.flexy.f1live.ui.theme.F1LivePreviewTheme
 import kotlinx.coroutines.delay
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 private const val MINUTE_MILLIS = 60_000L
 
+/** Corner of the plates inside the card: the card's own corner less its 8dp inset. */
+private val InsetCorner = 20.dp
+
 /**
- * The weekend coming up, shown on the Live tab once the displayed session is over: round, Grand
- * Prix, circuit and dates on top, and an inset strip with the next session and a countdown to it.
+ * The weekend coming up, shown on the Live tab: round, Grand Prix, circuit and dates on top, and an
+ * inset strip with the next session and a countdown to it; below them, the weekend's forecast day
+ * by day.
  *
  * The circuit is F1's plain outline (see [CircuitMaps.f1OutlineUrl]) - just the track, without the
  * DRS zones and turn numbers of the detailed map - tinted with the theme. Coil loads it lazily and
@@ -63,6 +82,7 @@ fun NextRoundCard(
     next: UpcomingSession,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    weather: WeekendWeather = WeekendWeather.Loading,
     nowMillis: Long = rememberMinuteClock(),
     /**
      * A narrow large-screen pane (~300dp): a smaller title and outline, so a long Grand Prix name
@@ -173,7 +193,7 @@ fun NextRoundCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(InsetCorner))
                 .background(colors.surfaceContainerHighest)
                 .padding(start = 16.dp, end = 10.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -218,6 +238,117 @@ fun NextRoundCard(
                 }
             }
         }
+
+        Spacer(Modifier.height(8.dp))
+        ForecastPlate(weather)
+    }
+}
+
+@Composable
+private fun Plate(content: @Composable () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(InsetCorner))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    ) { content() }
+}
+
+@Composable
+private fun PlateTitle(@StringRes text: Int) {
+    Text(
+        text = stringResource(text).uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 10.dp),
+    )
+}
+
+/** One column per weekend day: the sky, the high and low, and the chance of rain. */
+@Composable
+private fun ForecastPlate(weather: WeekendWeather) {
+    Plate {
+        PlateTitle(R.string.weekend_forecast)
+        when (weather) {
+            WeekendWeather.Loading -> Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(10.dp))
+                PlateNote(stringResource(R.string.forecast_loading))
+            }
+
+            is WeekendWeather.TooEarly -> PlateNote(
+                stringResource(R.string.forecast_too_early, formatDate(weather.fromUtcMillis)),
+            )
+
+            WeekendWeather.Unavailable -> PlateNote(stringResource(R.string.forecast_unavailable))
+
+            is WeekendWeather.Ready -> Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                weather.forecast.days.forEach { day ->
+                    DayColumn(day, Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlateNote(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+private val weekdayFormatter = DateTimeFormatter.ofPattern("EEE", Locale.getDefault())
+private val dayMonthFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
+
+@Composable
+private fun DayColumn(day: DayForecast, modifier: Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier = modifier.semantics(mergeDescendants = true) {},
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = weekdayFormatter.format(day.date),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = colors.onSurface,
+        )
+        Text(
+            text = dayMonthFormatter.format(day.date),
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        WeatherIcon(code = day.weatherCode, size = 36.dp)
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                text = formatDegrees(day.maxTempC),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = colors.onSurface,
+            )
+            day.minTempC?.let { low ->
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = formatDegrees(low),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 2.dp),
+                )
+            }
+        }
+        day.rainChancePct?.let {
+            RainChance(it, Modifier.padding(top = 4.dp), quietColor = colors.onSurfaceVariant)
+        }
     }
 }
 
@@ -247,6 +378,24 @@ private fun countdownText(remainingMillis: Long): String =
 
 // ---------------------------------------------------------------- previews
 
+private val PreviewForecast: WeekendForecast
+    get() {
+        val weekend = SampleData.weekend
+        val dates = weekend.sessions.mapNotNull { it.startUtcMillis }
+            .map { Instant.ofEpochMilli(it).atOffset(ZoneOffset.UTC).toLocalDate() }
+            .distinct()
+            .sorted()
+        val skies = listOf(0, 2, 61)
+        return WeekendForecast(
+            days = dates.mapIndexed { i, date ->
+                DayForecast(date, skies[i % skies.size], 27.0 - i * 2, 17.0 - i, listOf(5, 20, 70)[i % 3])
+            },
+            sessions = weekend.sessions.mapIndexed { i, s ->
+                s.kind to SessionForecast(skies[i % skies.size], 25.0 - i, listOf(5, 20, 70)[i % 3])
+            }.toMap(),
+        )
+    }
+
 @Preview(name = "Next round card", showBackground = true, backgroundColor = 0xFF0E0E0F, widthDp = 400)
 @Composable
 private fun NextRoundCardPreview() {
@@ -256,6 +405,7 @@ private fun NextRoundCardPreview() {
         NextRoundCard(
             next = UpcomingSession(weekend, session),
             onClick = {},
+            weather = WeekendWeather.Ready(PreviewForecast),
             // A fixed "now" 2 days 14 hours before the session, so the countdown is stable.
             nowMillis = (session.startUtcMillis ?: 0L) - (2L * 24 + 14) * 60 * MINUTE_MILLIS,
             modifier = Modifier.padding(16.dp),

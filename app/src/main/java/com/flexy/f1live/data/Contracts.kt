@@ -42,4 +42,5 @@ object Graph {
     lateinit var liveTiming: LiveTimingClient
     lateinit var sessionResults: SessionResultsRepository
     lateinit var circuitMaps: CircuitMapResolver
+    lateinit var weather: WeatherRepository
 }

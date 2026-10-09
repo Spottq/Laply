@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.flexy.f1live.data.Graph
 import com.flexy.f1live.model.RaceWeekend
+import com.flexy.f1live.model.WeekendForecast
+import com.flexy.f1live.model.WeekendWeather
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +22,8 @@ data class ScheduleUiState(
     /** Round number of the next weekend, highlighted and expanded by default. */
     val nextRound: Int? = null,
     val error: String? = null,
+    /** The current weekend's forecast, by round, once the forecast reaches it. */
+    val forecasts: Map<Int, WeekendForecast> = emptyMap(),
 ) {
     val isEmpty: Boolean get() = upcoming.isEmpty() && completed.isEmpty()
 }
@@ -45,7 +49,12 @@ class ScheduleViewModel : ViewModel() {
             val season = _uiState.value.season
             val result = Graph.schedule.getSeason(season, refresh)
             result.fold(
-                onSuccess = { weekends -> _uiState.value = partition(season, weekends) },
+                onSuccess = { weekends ->
+                    val fresh = partition(season, weekends)
+                    val shown = fresh.upcoming.take(WEATHER_WEEKENDS).map { it.round }.toSet()
+                    _uiState.value = fresh.copy(forecasts = _uiState.value.forecasts.filterKeys { it in shown })
+                    loadForecasts(_uiState.value.upcoming)
+                },
                 onFailure = { error ->
                     _uiState.update {
                         it.copy(
@@ -56,6 +65,19 @@ class ScheduleViewModel : ViewModel() {
                     }
                 },
             )
+        }
+    }
+
+    /**
+     * The forecast for the current weekend only; the next one gets its own once this one is over
+     * and [partition] has moved it to the completed list.
+     */
+    private suspend fun loadForecasts(upcoming: List<RaceWeekend>) {
+        for (weekend in upcoming.take(WEATHER_WEEKENDS)) {
+            val weather = Graph.weather.forecast(weekend)
+            if (weather is WeekendWeather.Ready) {
+                _uiState.update { it.copy(forecasts = it.forecasts + (weekend.round to weather.forecast)) }
+            }
         }
     }
 
@@ -80,6 +102,9 @@ class ScheduleViewModel : ViewModel() {
     }
 
     private companion object {
+        /** Only the weekend under way, or the very next one between weekends. */
+        const val WEATHER_WEEKENDS = 1
+
         /** Sessions stay "current" for a while after they start. */
         const val SESSION_GRACE_MILLIS = 3L * 60 * 60 * 1000
 

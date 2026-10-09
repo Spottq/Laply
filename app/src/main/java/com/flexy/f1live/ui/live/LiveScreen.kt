@@ -81,6 +81,7 @@ import com.flexy.f1live.model.SectorTiming
 import com.flexy.f1live.model.SessionKind
 import com.flexy.f1live.model.SessionStatus
 import com.flexy.f1live.model.TrackFlag
+import com.flexy.f1live.model.WeekendWeather
 import com.flexy.f1live.ui.SampleData
 import com.flexy.f1live.ui.components.CheckeredBackground
 import com.flexy.f1live.ui.components.ClassificationCardBottom
@@ -119,6 +120,7 @@ fun LiveScreen(
     val nextSession by viewModel.nextSession.collectAsStateWithLifecycle()
     val error by viewModel.lastError.collectAsStateWithLifecycle()
     val circuit by viewModel.circuit.collectAsStateWithLifecycle()
+    val nextWeather by viewModel.nextWeather.collectAsStateWithLifecycle()
 
     DisposableEffect(viewModel) {
         viewModel.onScreenVisible()
@@ -144,6 +146,7 @@ fun LiveScreen(
         contentPadding = contentPadding,
         modifier = modifier,
         circuit = circuit,
+        nextWeather = nextWeather,
     )
 }
 
@@ -177,6 +180,8 @@ fun LiveContent(
     onOpenSchedule: (() -> Unit)? = null,
     /** Outline of the meeting's circuit; only the two-pane layout shows it. */
     circuit: CircuitOutline? = null,
+    /** Forecast of the weekend coming up, for the next-round card. */
+    nextWeather: WeekendWeather = WeekendWeather.Loading,
 ) {
     val isRace = state.sessionKind == SessionKind.RACE || state.sessionKind == SessionKind.SPRINT
     var expandedNumber by rememberSaveable { mutableStateOf<String?>(null) }
@@ -204,6 +209,7 @@ fun LiveContent(
                 isRace = isRace,
                 isFollowing = isFollowing,
                 nextSession = nextSession,
+                nextWeather = nextWeather,
                 errorText = errorText,
                 expandedNumber = expandedNumber,
                 onToggleRow = onToggleRow,
@@ -221,6 +227,7 @@ fun LiveContent(
                 isRace = isRace,
                 isFollowing = isFollowing,
                 nextSession = nextSession,
+                nextWeather = nextWeather,
                 circuit = circuit,
                 errorText = errorText,
                 expandedNumber = expandedNumber,
@@ -241,6 +248,7 @@ private fun LiveSingleColumn(
     isRace: Boolean,
     isFollowing: Boolean,
     nextSession: UpcomingSession?,
+    nextWeather: WeekendWeather,
     errorText: String?,
     expandedNumber: String?,
     onToggleRow: (String) -> Unit,
@@ -261,6 +269,7 @@ private fun LiveSingleColumn(
         if (!nextRoundLast) {
             nextRoundSection(
                 nextSession = nextSession,
+                weather = nextWeather,
                 onOpenSchedule = onOpenSchedule,
                 modifier = Modifier.padding(
                     start = CardHorizontal,
@@ -282,6 +291,7 @@ private fun LiveSingleColumn(
         if (nextRoundLast) {
             nextRoundSection(
                 nextSession = nextSession,
+                weather = nextWeather,
                 onOpenSchedule = onOpenSchedule,
                 modifier = Modifier.padding(start = CardHorizontal, end = CardHorizontal, top = 20.dp),
             )
@@ -303,6 +313,7 @@ private fun LiveTwoPanes(
     isRace: Boolean,
     isFollowing: Boolean,
     nextSession: UpcomingSession?,
+    nextWeather: WeekendWeather,
     circuit: CircuitOutline?,
     errorText: String?,
     expandedNumber: String?,
@@ -334,9 +345,21 @@ private fun LiveTwoPanes(
             if (state.isLive) {
                 circuitSection(state, circuit)
                 conditionsSection(state)
-                nextRoundSection(nextSession, onOpenSchedule, Modifier, compact = compact)
+                nextRoundSection(
+                    nextSession = nextSession,
+                    weather = nextWeather,
+                    onOpenSchedule = onOpenSchedule,
+                    modifier = Modifier,
+                    compact = compact,
+                )
             } else {
-                nextRoundSection(nextSession, onOpenSchedule, Modifier, compact = compact)
+                nextRoundSection(
+                    nextSession = nextSession,
+                    weather = nextWeather,
+                    onOpenSchedule = onOpenSchedule,
+                    modifier = Modifier,
+                    compact = compact,
+                )
                 circuitSection(state, circuit)
                 conditionsSection(state)
             }
@@ -387,11 +410,12 @@ private fun LazyListScope.headerSection(
 }
 
 /**
- * The weekend coming up. Callers place it: above the classification between sessions, at the
- * bottom (phone) or below the circuit (tablet) while one runs.
+ * The weekend coming up, with its forecast. Callers place it: above the classification
+ * between sessions, at the bottom (phone) or below the circuit (tablet) while one runs.
  */
 private fun LazyListScope.nextRoundSection(
     nextSession: UpcomingSession?,
+    weather: WeekendWeather,
     onOpenSchedule: (() -> Unit)?,
     modifier: Modifier,
     compact: Boolean = false,
@@ -401,6 +425,7 @@ private fun LazyListScope.nextRoundSection(
         NextRoundCard(
             next = nextSession,
             onClick = onOpenSchedule,
+            weather = weather,
             modifier = modifier,
             compact = compact,
         )

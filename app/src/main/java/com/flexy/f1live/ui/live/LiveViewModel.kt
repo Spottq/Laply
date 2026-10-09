@@ -7,6 +7,7 @@ import com.flexy.f1live.live.LiveUpdateController
 import com.flexy.f1live.model.LiveSessionState
 import com.flexy.f1live.model.RaceWeekend
 import com.flexy.f1live.model.ScheduledSession
+import com.flexy.f1live.model.WeekendWeather
 import com.flexy.f1live.ui.components.CircuitOutline
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -47,6 +48,10 @@ class LiveViewModel : ViewModel() {
     private val _circuit = MutableStateFlow<CircuitOutline?>(null)
     val circuit: StateFlow<CircuitOutline?> = _circuit.asStateFlow()
 
+    /** The forecast for the weekend coming up. */
+    private val _nextWeather = MutableStateFlow<WeekendWeather>(WeekendWeather.Loading)
+    val nextWeather: StateFlow<WeekendWeather> = _nextWeather.asStateFlow()
+
     init {
         viewModelScope.launch {
             Graph.liveTiming.state
@@ -59,6 +64,16 @@ class LiveViewModel : ViewModel() {
                 _lastError.value = error.message ?: error::class.simpleName
             }
         }
+        viewModelScope.launch {
+            _nextSession
+                .map { it?.weekend }
+                .distinctUntilChanged()
+                .collectLatest { weekend ->
+                    if (weekend == null) return@collectLatest
+                    _nextWeather.value = WeekendWeather.Loading
+                    _nextWeather.value = Graph.weather.forecast(weekend)
+                }
+        }
         loadNextSession()
     }
 
@@ -68,6 +83,23 @@ class LiveViewModel : ViewModel() {
         LiveUpdateController.uiActive = true
         Graph.liveTiming.start()
         refreshNextSessionIfStale()
+        refreshWeather()
+    }
+
+    /**
+     * Re-asks for the next weekend's forecast; the repository answers from memory within the hour.
+     * The card keeps showing the forecast it has meanwhile.
+     */
+    private fun refreshWeather() {
+        val weekend = _nextSession.value?.weekend ?: return
+        viewModelScope.launch {
+            val weather = Graph.weather.forecast(weekend)
+            if (_nextSession.value?.weekend != weekend) return@launch
+            // An hour-old forecast beats none when the refresh fails.
+            val keepOld = weather is WeekendWeather.Unavailable &&
+                _nextWeather.value is WeekendWeather.Ready
+            if (!keepOld) _nextWeather.value = weather
+        }
     }
 
     /**

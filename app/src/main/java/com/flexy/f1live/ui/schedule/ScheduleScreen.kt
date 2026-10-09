@@ -5,6 +5,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,25 +22,28 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,14 +51,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.flexy.f1live.model.HourForecast
 import com.flexy.f1live.model.RaceWeekend
 import com.flexy.f1live.model.ScheduledSession
+import com.flexy.f1live.model.SessionForecast
 import com.flexy.f1live.model.SessionKind
+import com.flexy.f1live.model.WeekendForecast
 import com.flexy.f1live.ui.SampleData
 import com.flexy.f1live.ui.components.CenteredColumn
 import com.flexy.f1live.ui.components.CountryFlag
+import com.flexy.f1live.ui.components.RainChance
+import com.flexy.f1live.ui.components.WeatherIcon
 import com.flexy.f1live.ui.components.formatDate
 import com.flexy.f1live.ui.components.formatDayTime
+import com.flexy.f1live.ui.components.formatDegrees
+import com.flexy.f1live.ui.components.formatTime
 import com.flexy.f1live.ui.components.plusHorizontal
 import com.flexy.f1live.ui.theme.F1LivePreviewTheme
 
@@ -143,6 +154,7 @@ private fun ScheduleList(
                     initiallyExpanded = weekend.round == uiState.nextRound,
                     past = false,
                     onOpenResults = onOpenResults,
+                    forecast = uiState.forecasts[weekend.round],
                 )
             }
 
@@ -179,6 +191,7 @@ private fun WeekendCard(
     initiallyExpanded: Boolean,
     past: Boolean,
     onOpenResults: (season: Int, round: Int, kind: SessionKind) -> Unit,
+    forecast: WeekendForecast? = null,
 ) {
     var expanded by rememberSaveable(weekend.round) { mutableStateOf(initiallyExpanded) }
     val colors = if (highlighted) {
@@ -196,7 +209,8 @@ private fun WeekendCard(
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .alpha(if (past) 0.55f else 1f)
-            .clickable { expanded = !expanded },
+            // The current weekend stays open; the others fold with a tap.
+            .then(if (highlighted) Modifier else Modifier.clickable { expanded = !expanded }),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -243,7 +257,7 @@ private fun WeekendCard(
             }
 
             AnimatedVisibility(
-                visible = expanded,
+                visible = expanded || highlighted,
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically(),
             ) {
@@ -252,12 +266,29 @@ private fun WeekendCard(
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
                     )
                     val now = System.currentTimeMillis()
+                    // The next session of the season gets the hours around its start.
+                    val next = if (highlighted) weekend.sessions.firstOrNull { !isFinished(it, now) } else null
                     weekend.sessions.forEach { session ->
-                        SessionRow(
-                            session = session,
-                            finished = isFinished(session, now),
-                            onClick = { onOpenResults(weekend.season, weekend.round, session.kind) },
-                        )
+                        val finished = isFinished(session, now)
+                        val start = session.startUtcMillis
+                        val hours = if (session == next && forecast != null && start != null) {
+                            forecast.hoursAround(start)
+                        } else {
+                            emptyList()
+                        }
+                        val openResults = { onOpenResults(weekend.season, weekend.round, session.kind) }
+                        if (forecast == null) {
+                            SessionRow(session = session, finished = finished, onClick = openResults)
+                        } else {
+                            WeatherSessionRow(
+                                session = session,
+                                finished = finished,
+                                // What already ran has results instead.
+                                forecast = forecast.sessions[session.kind]?.takeUnless { finished },
+                                hours = hours,
+                                onClick = openResults,
+                            )
+                        }
                     }
                 }
             }
@@ -288,13 +319,113 @@ private fun SessionRow(session: ScheduledSession, finished: Boolean, onClick: ()
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
         )
-        if (finished) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Results",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 4.dp).size(18.dp),
-            )
+        if (finished) ResultsChevron()
+    }
+}
+
+/**
+ * [SessionRow] for the current weekend, the one with a forecast: the time moves under the name
+ * to make room for the weather at the session's start, and the next session of the season gets the
+ * hours around its start underneath.
+ */
+@Composable
+private fun WeatherSessionRow(
+    session: ScheduledSession,
+    finished: Boolean,
+    forecast: SessionForecast?,
+    hours: List<HourForecast>,
+    onClick: () -> Unit,
+) {
+    val secondary = LocalContentColor.current.copy(alpha = 0.72f)
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (finished) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = session.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = formatDayTime(session.startUtcMillis),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = secondary,
+                )
+            }
+            if (forecast != null) {
+                Row(
+                    modifier = Modifier.semantics(mergeDescendants = true) {},
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    forecast.rainChancePct?.let {
+                        RainChance(it, Modifier.padding(end = 10.dp), quietColor = secondary)
+                    }
+                    WeatherIcon(code = forecast.weatherCode, isDay = forecast.isDay, size = 26.dp)
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = formatDegrees(forecast.tempC),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+            if (finished) ResultsChevron()
+        }
+        if (hours.isNotEmpty()) {
+            HoursStrip(hours, Modifier.padding(top = 2.dp, bottom = 8.dp))
+        }
+    }
+}
+
+@Composable
+private fun ResultsChevron() {
+    Icon(
+        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        contentDescription = "Results",
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 4.dp).size(18.dp),
+    )
+}
+
+/** The mini card under the next session: the sky, temperature and rain chance hour by hour. */
+@Composable
+private fun HoursStrip(hours: List<HourForecast>, modifier: Modifier = Modifier) {
+    val content = LocalContentColor.current
+    val secondary = content.copy(alpha = 0.72f)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(content.copy(alpha = 0.07f))
+            .padding(horizontal = 8.dp, vertical = 10.dp),
+    ) {
+        hours.forEach { hour ->
+            Column(
+                modifier = Modifier.weight(1f).semantics(mergeDescendants = true) {},
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = formatTime(hour.utcMillis),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = secondary,
+                )
+                Spacer(Modifier.height(4.dp))
+                WeatherIcon(code = hour.weatherCode, isDay = hour.isDay, size = 30.dp)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = formatDegrees(hour.tempC),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+                hour.rainChancePct?.let {
+                    RainChance(it, Modifier.padding(top = 2.dp), quietColor = secondary)
+                }
+            }
         }
     }
 }

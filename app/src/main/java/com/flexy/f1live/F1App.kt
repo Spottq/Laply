@@ -9,6 +9,7 @@ import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.ImageRequest
+import coil3.svg.SvgDecoder
 import com.flexy.f1live.data.CircuitMapResolver
 import com.flexy.f1live.data.CircuitMapStore
 import com.flexy.f1live.data.CompositeLiveTimingClient
@@ -23,6 +24,7 @@ import com.flexy.f1live.data.SessionPersister
 import com.flexy.f1live.data.SessionResultsRepository
 import com.flexy.f1live.data.SessionResultsStore
 import com.flexy.f1live.data.TeamLogos
+import com.flexy.f1live.data.WeatherRepository
 import com.flexy.f1live.live.AutoFollow
 import com.flexy.f1live.model.LiveSessionState
 import com.flexy.f1live.settings.AppSettings
@@ -112,6 +114,7 @@ class F1App : Application(), SingletonImageLoader.Factory {
             onResults = ::prefetchImages,
         )
         Graph.circuitMaps = CircuitMapResolver(http, CircuitMapStore(jsonStore))
+        Graph.weather = WeatherRepository(http)
 
         SessionPersister(
             scope = appScope,
@@ -163,7 +166,11 @@ class F1App : Application(), SingletonImageLoader.Factory {
 
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader.Builder(context)
-            .components { add(OkHttpNetworkFetcherFactory(callFactory = { imageHttp })) }
+            .components {
+                add(OkHttpNetworkFetcherFactory(callFactory = { imageHttp }))
+                // Google's weather condition icons are published as SVG only.
+                add(SvgDecoder.Factory())
+            }
             .memoryCache {
                 MemoryCache.Builder()
                     .maxSizePercent(context, 0.25)
