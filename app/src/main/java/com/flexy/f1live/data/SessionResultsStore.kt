@@ -15,7 +15,7 @@ import kotlinx.serialization.builtins.serializer
 class SessionResultsStore(private val store: JsonStore) {
 
     suspend fun read(season: Int, round: Int, kind: SessionKind): LiveSessionState? =
-        store.read(key(season, round, kind), LiveSessionState.serializer())
+        store.read(key(season, round, kind), LiveSessionState.serializer())?.let(DriverHeadshots::refresh)
 
     suspend fun write(season: Int, round: Int, kind: SessionKind, state: LiveSessionState): Boolean =
         store.write(key(season, round, kind), LiveSessionState.serializer(), state)
@@ -78,7 +78,7 @@ class LastSessionStore(private val store: JsonStore) : CachedSessionSource {
          * the table came off disk and [CompositeLiveTimingClient] knows the network may replace it.
          */
         fun tagged(state: LiveSessionState) =
-            state.copy(isConnected = false, source = LiveSource.CACHE)
+            DriverHeadshots.refresh(state).copy(isConnected = false, source = LiveSource.CACHE)
     }
 }
 

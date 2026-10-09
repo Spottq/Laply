@@ -125,7 +125,10 @@ object LiveStateParser {
             shortName = shortNameOf(firstName, lastName, driver),
             teamName = driver?.string("TeamName").orEmpty(),
             teamColorHex = driver?.string("TeamColour")?.removePrefix("#")?.takeIf { it.isNotBlank() },
-            headshotUrl = driver?.string("HeadshotUrl")?.takeIf { it.isNotBlank() },
+            headshotUrl = DriverHeadshots.resolve(
+                driver?.string("Tla"),
+                driver?.string("HeadshotUrl")?.takeIf { it.isNotBlank() },
+            ),
             countryCode = countryCodeOf(driver?.string("CountryCode"))
                 ?: DriverNationality.forTla(driver?.string("Tla")),
             bestLapTime = line.obj("BestLapTime")?.string("Value").orEmpty(),

@@ -1,0 +1,16 @@
+# App baseline profile: everything the three tabs run on their first frames and first scroll gets
+# compiled ahead of time instead of being interpreted and JIT-compiled while the user is already
+# flinging. The Compose/AndroidX libraries ship their own profiles; this covers the app's code.
+# AGP rewrites these rules through the R8 mapping, so the wildcards survive obfuscation.
+HSPLcom/flexy/f1live/MainActivity;->**(**)**
+HSPLcom/flexy/f1live/F1App;->**(**)**
+HSPLcom/flexy/f1live/ui/**;->**(**)**
+HSPLcom/flexy/f1live/model/**;->**(**)**
+HSPLcom/flexy/f1live/data/**;->**(**)**
+HSPLcom/flexy/f1live/settings/**;->**(**)**
+Lcom/flexy/f1live/MainActivity;
+Lcom/flexy/f1live/F1App;
+Lcom/flexy/f1live/ui/**;
+Lcom/flexy/f1live/model/**;
+Lcom/flexy/f1live/data/**;
+Lcom/flexy/f1live/settings/**;
