@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Standings home-screen widgets (com.flexy.f1live.widget.standings). -->
+    <string name="standings_widget_drivers_label">Drivers\' standings</string>
+    <string name="standings_widget_drivers_description">The drivers\' championship, with a line under the last driver who can still win the title. The taller the widget, the more drivers it lists.</string>
+    <string name="standings_widget_teams_label">Constructors\' standings</string>
+    <string name="standings_widget_teams_description">The constructors\' championship, with a line under the last team that can still win the title. The taller the widget, the more teams it lists.</string>
+    <string name="title_fight_widget_label">Title fight</string>
+    <string name="title_fight_widget_description">The championship leader\'s points and how far behind them the chasing drivers are.</string>
+
+    <!-- Overlines, upper-cased by the widget: "Drivers · after R20". -->
+    <string name="standings_widget_drivers">Drivers</string>
+    <string name="standings_widget_constructors">Constructors</string>
+    <!-- The narrow widget's shorter "Constructors". -->
+    <string name="standings_widget_teams">Teams</string>
+    <string name="standings_widget_leader">Leader</string>
+    <string name="standings_widget_champion">Champion</string>
+    <!-- %1$d is the round number. -->
+    <string name="standings_widget_after_round">after R%1$d</string>
+    <string name="standings_widget_round">R%1$d</string>
+    <!-- In place of the points left once the season is over. -->
+    <string name="standings_widget_final">Final</string>
+    <string name="standings_widget_pts">pts</string>
+    <string name="standings_widget_out_of_reach">Title out of reach below</string>
+    <string name="standings_widget_title_decided">Title decided</string>
+    <plurals name="standings_widget_wins">
+        <item quantity="one">%1$d win</item>
+        <item quantity="other">%1$d wins</item>
+    </plurals>
+    <string name="standings_widget_empty_title">No standings yet</string>
+    <string name="standings_widget_empty_body">Open Laply to load them</string>
+
+    <!-- Static widget-picker previews (Android 12-14; 15+ shows a generated live preview). -->
+    <string name="standings_widget_preview_drivers" translatable="false">Drivers · after R20</string>
+    <string name="standings_widget_preview_teams" translatable="false">Constructors · after R20</string>
+    <string name="standings_widget_preview_leader" translatable="false">Leader · after R20</string>
+    <string name="standings_widget_preview_detail" translatable="false">108 pts to play for</string>
+    <string name="standings_widget_preview_teams_detail" translatable="false">187 pts to play for</string>
+</resources>

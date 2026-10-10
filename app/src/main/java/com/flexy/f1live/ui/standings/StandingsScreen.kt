@@ -3,6 +3,7 @@ package com.flexy.f1live.ui.standings
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -40,7 +41,9 @@ import com.flexy.f1live.data.DriverHeadshots
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -60,6 +63,7 @@ import com.flexy.f1live.R
 import com.flexy.f1live.data.ConstructorStanding
 import com.flexy.f1live.data.DriverStanding
 import com.flexy.f1live.data.TeamLogos
+import com.flexy.f1live.data.TitleFight
 import com.flexy.f1live.data.constructorColorHex
 import com.flexy.f1live.data.driverCountryCode
 import com.flexy.f1live.ui.components.CenteredColumn
@@ -141,6 +145,17 @@ private fun StandingsList(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    // Each tab its own points left: a team scores with both its cars.
+                    val titleSummary = when (uiState.tab) {
+                        StandingsTab.Drivers -> uiState.titleFight?.summary
+                        StandingsTab.Constructors -> uiState.constructorsFight?.summary
+                    }
+                    if (titleSummary != null) {
+                        Text(
+                            text = titleSummary,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                     if (uiState.fromCache) {
                         Text(
                             text = if (uiState.round > 0) {
@@ -169,20 +184,51 @@ private fun StandingsList(
             }
 
             when (uiState.tab) {
-                StandingsTab.Drivers -> items(
-                    items = uiState.drivers,
-                    key = { "d" + it.position + it.code },
-                    contentType = { "driver" },
-                ) { driver ->
-                    DriverStandingRow(driver, uiState.driverLeaderPoints)
+                StandingsTab.Drivers -> {
+                    // Everyone above the line can still win the title, nobody below it can.
+                    val cut = uiState.titleCut ?: uiState.drivers.size
+                    items(
+                        items = uiState.drivers.take(cut),
+                        key = { "d" + it.position + it.code },
+                        contentType = { "driver" },
+                    ) { driver ->
+                        DriverStandingRow(driver, uiState.driverLeaderPoints)
+                    }
+                    if (cut < uiState.drivers.size) {
+                        item(key = "title-cut", contentType = "title-cut") {
+                            TitleCutLine(decided = uiState.titleFight?.decided == true)
+                        }
+                        items(
+                            items = uiState.drivers.drop(cut),
+                            key = { "d" + it.position + it.code },
+                            contentType = { "driver" },
+                        ) { driver ->
+                            DriverStandingRow(driver, uiState.driverLeaderPoints)
+                        }
+                    }
                 }
 
-                StandingsTab.Constructors -> items(
-                    items = uiState.constructors,
-                    key = { "c" + it.position + it.constructorId },
-                    contentType = { "constructor" },
-                ) { team ->
-                    ConstructorStandingRow(team, uiState.constructorLeaderPoints)
+                StandingsTab.Constructors -> {
+                    val cut = uiState.constructorsCut ?: uiState.constructors.size
+                    items(
+                        items = uiState.constructors.take(cut),
+                        key = { "c" + it.position + it.constructorId },
+                        contentType = { "constructor" },
+                    ) { team ->
+                        ConstructorStandingRow(team, uiState.constructorLeaderPoints)
+                    }
+                    if (cut < uiState.constructors.size) {
+                        item(key = "constructors-title-cut", contentType = "title-cut") {
+                            TitleCutLine(decided = uiState.constructorsFight?.decided == true)
+                        }
+                        items(
+                            items = uiState.constructors.drop(cut),
+                            key = { "c" + it.position + it.constructorId },
+                            contentType = { "constructor" },
+                        ) { team ->
+                            ConstructorStandingRow(team, uiState.constructorLeaderPoints)
+                        }
+                    }
                 }
             }
 
@@ -433,6 +479,45 @@ private fun PointsColumn(points: Double, wins: Int, onAccentSurface: Boolean) {
     }
 }
 
+/**
+ * Dashed rule under the last driver or team that can still win the title, captioned in the middle.
+ * With one left above it the title is settled, and the caption says so.
+ */
+@Composable
+private fun TitleCutLine(decided: Boolean) {
+    val color = MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 20.dp)
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        DashedRule(color, Modifier.weight(1f))
+        Text(
+            text = if (decided) "Title decided" else "Title out of reach below",
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            maxLines = 1,
+        )
+        DashedRule(color, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun DashedRule(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier.height(1.dp)) {
+        val y = size.height / 2
+        drawLine(
+            color = color.copy(alpha = 0.6f),
+            start = Offset(0f, y),
+            end = Offset(size.width, y),
+            strokeWidth = 1.dp.toPx(),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx())),
+        )
+    }
+}
+
 /** Thin proportional bar: how much of the leader's points this entry has. */
 @Composable
 private fun GapBar(fraction: Float, color: Color) {
@@ -587,9 +672,17 @@ private fun StandingsPreview() {
                     DriverStanding(3, 201.5, 3, "VER", "1", "Max", "Verstappen", "Dutch", "Red Bull", "red_bull"),
                     DriverStanding(4, 150.0, 0, "LEC", "16", "Charles", "Leclerc", "Monegasque", "Ferrari", "ferrari"),
                 ),
+                titleFight = TitleFight(racesLeft = 2, sprintsLeft = 1, contenders = 3),
                 constructors = listOf(
                     ConstructorStanding(1, 470.0, 9, "McLaren", "mclaren", "British"),
                     ConstructorStanding(2, 280.0, 3, "Ferrari", "ferrari", "Italian"),
+                ),
+                constructorsFight = TitleFight(
+                    racesLeft = 2,
+                    sprintsLeft = 1,
+                    contenders = 1,
+                    perRace = TitleFight.RACE_ONE_TWO,
+                    perSprint = TitleFight.SPRINT_ONE_TWO,
                 ),
             ),
             onSelectTab = {},

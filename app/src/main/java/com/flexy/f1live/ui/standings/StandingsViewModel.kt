@@ -4,16 +4,36 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.flexy.f1live.data.ConstructorStanding
 import com.flexy.f1live.data.DriverStanding
+import com.flexy.f1live.data.Graph
 import com.flexy.f1live.data.JolpicaStandingsRepository
 import com.flexy.f1live.data.Standings
+import com.flexy.f1live.data.TitleFight
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
 enum class StandingsTab { Drivers, Constructors }
+
+/**
+ * The table a standings widget asked for: set by MainActivity before it opens the Standings tab,
+ * taken once by the screen's view model, so a later visit keeps the tab the user picked.
+ */
+object StandingsTabRequests {
+    private val pending = MutableStateFlow<StandingsTab?>(null)
+
+    val requests: StateFlow<StandingsTab?> = pending.asStateFlow()
+
+    fun request(tab: StandingsTab) {
+        pending.value = tab
+    }
+
+    fun take(): StandingsTab? = pending.getAndUpdate { null }
+}
 
 data class StandingsUiState(
     val season: Int,
@@ -26,8 +46,22 @@ data class StandingsUiState(
     /** True while the table on screen came from disk and the network has not confirmed it. */
     val fromCache: Boolean = false,
     val error: String? = null,
+    /** Null until the calendar is in, or when it does not fit the standings. */
+    val titleFight: TitleFight? = null,
+    /** The same for the constructors' championship. */
+    val constructorsFight: TitleFight? = null,
 ) {
     val isEmpty: Boolean get() = drivers.isEmpty() && constructors.isEmpty()
+
+    /**
+     * How many drivers sit above the "out of reach" line, or null for no line: everyone can still
+     * win, or there is no calendar to tell.
+     */
+    val titleCut: Int? get() = titleFight?.contenders?.takeIf { it in 1 until drivers.size }
+
+    /** The same line in the constructors' table. */
+    val constructorsCut: Int?
+        get() = constructorsFight?.contenders?.takeIf { it in 1 until constructors.size }
 
     /** Leader's points, used to size the gap bars. Never zero, so the bars can divide by it. */
     val driverLeaderPoints: Double get() = drivers.firstOrNull()?.points?.takeIf { it > 0 } ?: 1.0
@@ -43,6 +77,11 @@ class StandingsViewModel : ViewModel() {
 
     init {
         load(refresh = false)
+        viewModelScope.launch {
+            StandingsTabRequests.requests.filterNotNull().collect {
+                StandingsTabRequests.take()?.let(::selectTab)
+            }
+        }
     }
 
     fun refresh() = load(refresh = true)
@@ -90,6 +129,27 @@ class StandingsViewModel : ViewModel() {
                     }
                 },
             )
+
+            // After the table, not before it: on a first launch the calendar may need the network
+            // too, and the standings should not wait for it.
+            val weekends = Graph.schedule.getSeason(season).getOrNull().orEmpty()
+            val now = System.currentTimeMillis()
+            _uiState.update {
+                it.copy(
+                    titleFight = TitleFight.of(
+                        drivers = it.drivers,
+                        afterRound = it.round,
+                        weekends = weekends,
+                        nowUtcMillis = now,
+                    ),
+                    constructorsFight = TitleFight.ofConstructors(
+                        teams = it.constructors,
+                        afterRound = it.round,
+                        weekends = weekends,
+                        nowUtcMillis = now,
+                    ),
+                )
+            }
         }
     }
 

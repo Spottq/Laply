@@ -113,6 +113,41 @@ data class DriverTiming(
      * show whatever happened on an in-lap. Empty for sources that do not publish them.
      */
     val bestSectors: List<SectorTiming> = emptyList(),
+    /**
+     * The session's tyre history, oldest stint first, from `TimingAppData.Lines[n].Stints`. Empty
+     * for sources that publish no tyres (ESPN, Jolpica).
+     */
+    val stints: List<TyreStint> = emptyList(),
+) {
+    /**
+     * Pit stops so far: the timing line's own count, or the stint changes for a source without
+     * one. A red-flag tyre change is a new stint but no stop, so the two can differ.
+     */
+    val pitStops: Int
+        get() = if (numberOfPitStops > 0) numberOfPitStops else (stints.size - 1).coerceAtLeast(0)
+
+    /**
+     * The lap each stint ended on, i.e. the lap of each stop: the laps of the stints before it,
+     * added up. Laps a set carried from an earlier session are not in [TyreStint.laps], so a
+     * used set does not push the count on.
+     */
+    val pitStopLaps: List<Int>
+        get() = stints.dropLast(1).runningFold(0) { lap, stint -> lap + stint.laps }.drop(1)
+}
+
+/**
+ * One stint from `TimingAppData.Lines[n].Stints`: the laps between two visits to the pits on one
+ * set of tyres. In practice and qualifying that is a run, and a second run on the same set is a
+ * stint of its own with [isNew] false.
+ */
+@Immutable
+@Serializable
+data class TyreStint(
+    val compound: String?,       // "SOFT" / "MEDIUM" / "HARD" / "INTERMEDIATE" / "WET" / null
+    /** False for a set that had already been run, earlier in this session or in another one. */
+    val isNew: Boolean,
+    /** Laps driven in this stint, not counting the ones the set already had on it. */
+    val laps: Int,
 )
 
 @Immutable

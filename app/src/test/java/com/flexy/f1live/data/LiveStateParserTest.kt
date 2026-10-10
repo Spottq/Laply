@@ -3,6 +3,7 @@ package com.flexy.f1live.data
 import com.flexy.f1live.model.SessionKind
 import com.flexy.f1live.model.SessionStatus
 import com.flexy.f1live.model.TrackFlag
+import com.flexy.f1live.model.TyreStint
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -100,6 +101,75 @@ class LiveStateParserTest {
         assertEquals("1:22.067", second.bestLapTime)
         assertEquals(10, second.numberOfLaps)
     }
+
+    @Test
+    fun `stints come oldest first with the laps of each run`() {
+        val norris = state.drivers.first { it.racingNumber == "1" }
+        // TotalLaps is the age of the set, StartLaps the age it went out on: the second run was
+        // on the first run's set, which already had 4 laps on it.
+        assertEquals(
+            listOf(
+                TyreStint("SOFT", isNew = true, laps = 4),
+                TyreStint("SOFT", isNew = false, laps = 3),
+                TyreStint("SOFT", isNew = true, laps = 2),
+            ),
+            norris.stints,
+        )
+        assertEquals(listOf(4, 7), norris.pitStopLaps)
+    }
+
+    @Test
+    fun `a stint that has only just started has no laps yet`() {
+        val sainz = state.drivers.first { it.racingNumber == "55" }
+        assertEquals(5, sainz.stints.size)
+        assertEquals(TyreStint("SOFT", isNew = true, laps = 0), sainz.stints.last())
+    }
+
+    @Test
+    fun `a race tyre history gives the lap of every stop`() {
+        val state = LiveStateParser.parse(
+            raceDocument(
+                stints = """[
+                    {"Compound": "SOFT", "New": "false", "StartLaps": 3, "TotalLaps": 18},
+                    {"Compound": "MEDIUM", "New": "true", "StartLaps": 0, "TotalLaps": 23},
+                    {"Compound": "HARD", "New": "true", "StartLaps": 0, "TotalLaps": 9}
+                ]""",
+                pitStops = 2,
+            ),
+        )
+        val driver = state.drivers.single()
+        assertEquals(listOf(15, 23, 9), driver.stints.map { it.laps })
+        assertEquals(listOf(false, true, true), driver.stints.map { it.isNew })
+        assertEquals(2, driver.pitStops)
+        assertEquals(listOf(15, 38), driver.pitStopLaps)
+    }
+
+    @Test
+    fun `stints merged from deltas arrive keyed by index`() {
+        val state = LiveStateParser.parse(
+            raceDocument(
+                stints = """{
+                    "1": {"Compound": "HARD", "New": "true", "StartLaps": 0, "TotalLaps": 4},
+                    "0": {"Compound": "UNKNOWN", "New": "true", "StartLaps": 0, "TotalLaps": 12}
+                }""",
+                pitStops = 0,
+            ),
+        )
+        val driver = state.drivers.single()
+        assertEquals(listOf(null, "HARD"), driver.stints.map { it.compound })
+        // No count on the timing line: the stint change stands in for it.
+        assertEquals(1, driver.pitStops)
+        assertEquals(listOf(12), driver.pitStopLaps)
+    }
+
+    private fun raceDocument(stints: String, pitStops: Int) =
+        kotlinx.serialization.json.Json.parseToJsonElement(
+            """{
+                "SessionInfo": {"Name": "Race", "Type": "Race"},
+                "TimingData": {"Lines": {"4": {"Line": 1, "NumberOfLaps": 47, "NumberOfPitStops": $pitStops}}},
+                "TimingAppData": {"Lines": {"4": {"RacingNumber": "4", "Stints": $stints}}}
+            }""",
+        ) as kotlinx.serialization.json.JsonObject
 
     @Test
     fun `knocked out drivers are flagged`() {

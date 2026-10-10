@@ -8,6 +8,7 @@ import com.flexy.f1live.model.SectorTiming
 import com.flexy.f1live.model.SessionKind
 import com.flexy.f1live.model.SessionStatus
 import com.flexy.f1live.model.TrackFlag
+import com.flexy.f1live.model.TyreStint
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -168,6 +169,7 @@ object LiveStateParser {
             // time on an F1 timing tower.
             fastestLap = stats?.obj("PersonalBestLapTime")?.int("Position") == 1,
             bestSectors = parseBestSectors(stats?.get("BestSectors")),
+            stints = parseStints(appData),
         )
     }
 
@@ -204,6 +206,22 @@ object LiveStateParser {
                 value = value,
                 personalFastest = value.isNotBlank(),
                 overallFastest = obj?.int("Position") == 1,
+            )
+        }
+
+    /**
+     * `TimingAppData.Lines[n].Stints`, oldest first. `TotalLaps` is the age of the set and
+     * `StartLaps` the age it went out on, so the stint itself is the difference between the two.
+     */
+    private fun parseStints(appData: JsonObject?): List<TyreStint> =
+        appData?.get("Stints")?.indexedList().orEmpty().mapNotNull { element ->
+            val stint = element as? JsonObject ?: return@mapNotNull null
+            val startLaps = stint.int("StartLaps") ?: 0
+            TyreStint(
+                compound = stint.string("Compound")?.trim()?.uppercase()
+                    ?.takeIf { it.isNotEmpty() && it != "UNKNOWN" },
+                isNew = stint.bool("New") ?: (startLaps == 0),
+                laps = ((stint.int("TotalLaps") ?: startLaps) - startLaps).coerceAtLeast(0),
             )
         }
 

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Standings widget, the drivers' table (widget/standings/StandingsWidget.kt). 4x2 by default,
+     resizable from 2x2 (it needs two rows) and laid out for its exact size. The settings and the
+     Samsung size and style attributes are as for the session widget (widget_f1_live_info.xml). -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:configure="com.flexy.f1live.widget.WidgetConfigActivity"
+    android:description="@string/standings_widget_drivers_description"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:maxResizeWidth="1000dp"
+    android:maxResizeHeight="1000dp"
+    android:minWidth="276dp"
+    android:minHeight="117dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:previewLayout="@layout/widget_preview_driver_standings"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable|configuration_optional"
+    app:widgetSize="medium|large|extraLarge|extraLargeLong"
+    app:widgetStyle="colorful" />

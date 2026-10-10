@@ -225,9 +225,9 @@ private fun WidgetBody(snapshot: WidgetSnapshot, colors: WidgetColors) {
  * The glass background layer: widget_glass_background's rounded shape tinted white (light) or
  * near-black (dark) at the chosen alpha, following the system for [GlassStyle.tone] SYSTEM.
  * Tinting keeps it a shape drawable, which is what One UI blurs behind. Base 255 light / 16 dark
- * and alpha 1..254 as in twidget (MIT, (c) 2026 Josh Skinner).
+ * and alpha 1..254 as in twidget (MIT, (c) 2026 Josh Skinner). The standings widgets use it too.
  */
-private fun glassBackground(context: Context, glass: GlassStyle): RemoteViews {
+internal fun glassBackground(context: Context, glass: GlassStyle): RemoteViews {
     val views = RemoteViews(context.packageName, R.layout.widget_glass_background)
     val alpha = glass.alpha.coerceIn(1, 254)
     val light = ColorStateList.valueOf(AndroidColor.argb(alpha, 255, 255, 255))
