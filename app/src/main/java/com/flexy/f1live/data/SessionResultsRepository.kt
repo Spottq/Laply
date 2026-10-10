@@ -353,11 +353,8 @@ object JolpicaResultsMapper {
             ?: driver?.permanentNumber?.takeIf { it.isNotBlank() }
             ?: driver?.driverId.orEmpty()
 
-    private fun shortNameOf(driver: DriverDto?): String {
-        val first = driver?.givenName.orEmpty()
-        val last = driver?.familyName.orEmpty()
-        return if (first.isNotEmpty()) first.first() + ". " + last else last
-    }
+    private fun shortNameOf(driver: DriverDto?): String =
+        DriverNames.short(driver?.givenName.orEmpty(), driver?.familyName.orEmpty())
 
     // ------------------------------------------------------------------- dtos
 

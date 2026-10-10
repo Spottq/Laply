@@ -1,5 +1,6 @@
 package com.flexy.f1live.ui
 
+import com.flexy.f1live.data.DriverNames
 import com.flexy.f1live.model.DriverTiming
 import com.flexy.f1live.model.LiveSessionState
 import com.flexy.f1live.model.RaceControlMessage
@@ -45,7 +46,7 @@ object SampleData {
         tla = tla,
         firstName = first,
         lastName = last,
-        shortName = first.first().toString() + ". " + last,
+        shortName = DriverNames.short(first, last),
         teamName = team,
         teamColorHex = color,
         headshotUrl = headshot(reference, first, last),

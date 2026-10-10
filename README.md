@@ -21,10 +21,11 @@
 - **Live timing**: the official F1 live timing feed (SignalR), with an automatic **ESPN fallback** when that feed is blocked or down, so the classification keeps updating.
 - **Automatic Live Update**: follow the season once and Laply opens an ongoing Live Update when each session starts, with the leader, the lap count and the track status in a status-bar chip.
 - **MetricStyle on Android 17**: the gaps between the leaders appear as large metrics in the notification. Android 16 shows a segmented progress bar and Android 12 to 15 show a regular ongoing notification.
-- **Home-screen widgets**: countdown to the next session and the weekend ahead. Resize the widget from 2x1 up to full screen and it adds more detail as it grows. It uses Material 3 / Monet colours on Pixel and translucent **One UI glass** on Samsung.
-- **Samsung lock-screen widgets**: next session and countdown on the lock screen, AOD and the Flip/Fold cover screen, plus a 2x2 layout on tablets and foldables.
+- **Home-screen widgets**: countdown to the next session and the weekend ahead. Resize the widget from 2x1 up to full screen and it adds more detail as it grows. It uses Material 3 / Monet colours on Pixel and translucent **One UI glass** on Samsung. Three **standings widgets** (drivers', constructors' and the title fight) keep the championship on your home screen.
+- **Samsung lock-screen widgets**: next session and countdown on the lock screen, AOD and the Flip/Fold cover screen, plus 2x2 layouts on tablets and foldables, the standings and the title fight included.
+- **Tyres and pit stops**: expand a driver on the Live tab to see their tyre stints and pit laps.
 - **Tablets and foldables**: two-pane Live layout with the circuit map and conditions next to the classification.
-- **Schedule, results and standings**: the full season calendar in your time zone, session results and driver and team championships.
+- **Schedule, results and standings**: the full season calendar in your time zone, session results and driver and team championships, with a line under the last driver or team who can still win the title.
 - **Modern Android**: Material 3 Expressive, dynamic colour (Monet) or F1 red, light/dark/system theme, predictive back and edge-to-edge.
 - **Update checker**: a daily check against GitHub Releases posts a notification when a new version is out. You can turn it off, or check by hand, in Settings → About.
 

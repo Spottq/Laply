@@ -14,7 +14,6 @@ object LiveNotificationBuilder {
 
     const val FASTEST_LAP_ICON = "⏱️"
 
-    const val STOPWATCH_GLYPH = "⏱︎"
 
     const val COLOR_SECTOR_OVERALL = 0xFFB040FF.toInt()
     const val COLOR_SECTOR_PERSONAL = 0xFF2ECC71.toInt()
@@ -236,7 +235,7 @@ object LiveNotificationBuilder {
         val first = if (race) {
             MetricSpec(
                 value = leader.tla.ifBlank { leader.racingNumber }.ifBlank { METRIC_MISSING },
-                label = leaderBestLapLabel(leader) ?: lapLabel(state) ?: "Leader",
+                label = "P1",
                 semantic = flagSemantic,
             )
         } else {
@@ -275,9 +274,6 @@ object LiveNotificationBuilder {
         TrackFlag.SC, TrackFlag.VSC, TrackFlag.VSC_ENDING, TrackFlag.YELLOW -> MetricSemantic.CAUTION
         TrackFlag.GREEN, TrackFlag.UNKNOWN -> MetricSemantic.UNSPECIFIED
     }
-
-    private fun leaderBestLapLabel(leader: DriverTiming): String? =
-        leader.bestLapTime.trim().takeIf { it.isNotEmpty() }?.let { "$STOPWATCH_GLYPH $it" }
 
     private fun positionLabel(driver: DriverTiming, index: Int): String {
         val position = if (driver.position > 0) driver.position else index + 1

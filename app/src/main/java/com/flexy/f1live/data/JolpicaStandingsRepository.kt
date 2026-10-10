@@ -34,7 +34,7 @@ data class DriverStanding(
     val constructorId: String,
 ) {
     val shortName: String
-        get() = if (firstName.isNotEmpty()) "${firstName.first()}. $lastName" else lastName
+        get() = DriverNames.short(firstName, lastName)
 }
 
 @Serializable

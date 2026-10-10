@@ -167,7 +167,7 @@ object LiveStateParser {
 
     private fun shortNameOf(firstName: String, lastName: String, driver: JsonObject?): String = when {
         firstName.isNotBlank() && lastName.isNotBlank() ->
-            firstName.trim().first().uppercaseChar() + ". " + lastName.trim()
+            DriverNames.short(firstName, lastName)
         lastName.isNotBlank() -> lastName.trim()
         else -> driver?.string("BroadcastName") ?: driver?.string("Tla").orEmpty()
     }

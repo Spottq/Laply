@@ -224,7 +224,7 @@ class LiveNotificationBuilderTest {
     fun `race metrics are the leader, the gap to P2 and P3's interval`() {
         assertEquals(
             listOf(
-                spec("VER", "Lap 34/57"),
+                spec("VER", "P1"),
                 spec("+1.234", "P2 NOR"),
                 spec("+0.456", "P3 LEC", LiveNotificationBuilder.MetricSemantic.INFO),
             ),
@@ -271,17 +271,13 @@ class LiveNotificationBuilderTest {
     }
 
     @Test
-    fun `the leader's best lap labels the leader cell, with the stopwatch`() {
+    fun `the leader cell is labelled P1 whatever the lap and the best lap`() {
         val withBest = metricRace.copy(
             drivers = metricRace.drivers.mapIndexed { i, d -> if (i == 0) d.copy(bestLapTime = "1:21.046") else d },
         )
-        assertEquals(spec("VER", "⏱︎ 1:21.046"), LiveNotificationBuilder.metrics(withBest)[0])
-    }
-
-    @Test
-    fun `an unknown race distance labels the leader cell plainly`() {
-        val metrics = LiveNotificationBuilder.metrics(metricRace.copy(currentLap = null, totalLaps = null))
-        assertEquals(spec("VER", "Leader"), metrics[0])
+        assertEquals(spec("VER", "P1"), LiveNotificationBuilder.metrics(withBest)[0])
+        val noDistance = metricRace.copy(currentLap = null, totalLaps = null)
+        assertEquals(spec("VER", "P1"), LiveNotificationBuilder.metrics(noDistance)[0])
     }
 
     @Test
