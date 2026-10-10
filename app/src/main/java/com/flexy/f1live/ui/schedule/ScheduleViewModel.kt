@@ -19,10 +19,8 @@ data class ScheduleUiState(
     val refreshing: Boolean = false,
     val upcoming: List<RaceWeekend> = emptyList(),
     val completed: List<RaceWeekend> = emptyList(),
-    /** Round number of the next weekend, highlighted and expanded by default. */
     val nextRound: Int? = null,
     val error: String? = null,
-    /** The current weekend's forecast, by round, once the forecast reaches it. */
     val forecasts: Map<Int, WeekendForecast> = emptyMap(),
 ) {
     val isEmpty: Boolean get() = upcoming.isEmpty() && completed.isEmpty()
@@ -68,10 +66,6 @@ class ScheduleViewModel : ViewModel() {
         }
     }
 
-    /**
-     * The forecast for the current weekend only; the next one gets its own once this one is over
-     * and [partition] has moved it to the completed list.
-     */
     private suspend fun loadForecasts(upcoming: List<RaceWeekend>) {
         for (weekend in upcoming.take(WEATHER_WEEKENDS)) {
             val weather = Graph.weather.forecast(weekend)
@@ -84,7 +78,6 @@ class ScheduleViewModel : ViewModel() {
     private fun partition(season: Int, weekends: List<RaceWeekend>): ScheduleUiState {
         val now = System.currentTimeMillis()
         val sorted = weekends.sortedBy { it.round }
-        // A weekend counts as done once its last known session has started.
         val (completed, upcoming) = sorted.partition { weekend ->
             val last = weekend.sessions.mapNotNull { it.startUtcMillis }.maxOrNull()
                 ?: weekend.raceStartUtcMillis
@@ -102,10 +95,8 @@ class ScheduleViewModel : ViewModel() {
     }
 
     private companion object {
-        /** Only the weekend under way, or the very next one between weekends. */
         const val WEATHER_WEEKENDS = 1
 
-        /** Sessions stay "current" for a while after they start. */
         const val SESSION_GRACE_MILLIS = 3L * 60 * 60 * 1000
 
         fun currentSeason(): Int = Calendar.getInstance().get(Calendar.YEAR)

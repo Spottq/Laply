@@ -1,7 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Home-screen widget colours with dynamic colour on (see widget/WidgetColors.kt).
-     Android 12-13 only publish the raw tonal palettes, so these pick the nearest tones of the
-     Material 3 roles; values-v34 maps the exact roles Android 14 added. -->
 <resources>
     <color name="widget_background">@android:color/system_neutral1_50</color>
     <color name="widget_inset">@android:color/system_neutral1_100</color>

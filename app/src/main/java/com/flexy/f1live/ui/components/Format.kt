@@ -18,15 +18,12 @@ private val timeFormatter: DateTimeFormatter =
 private val clockFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("HH:mm:ss", Locale.getDefault())
 
-/** "Sun 6 Sep · 16:00" in the device time zone. */
 fun formatDayTime(utcMillis: Long?): String =
     utcMillis?.let { dayTimeFormatter.format(Instant.ofEpochMilli(it).atZone(zone)) } ?: "TBC"
 
-/** "Sun 6 Sep" in the device time zone. */
 fun formatDate(utcMillis: Long?): String =
     utcMillis?.let { shortDateFormatter.format(Instant.ofEpochMilli(it).atZone(zone)) } ?: "Date TBC"
 
-/** "16:00" in the device time zone. */
 fun formatTime(utcMillis: Long?): String =
     utcMillis?.let { timeFormatter.format(Instant.ofEpochMilli(it).atZone(zone)) } ?: "--:--"
 
@@ -35,10 +32,6 @@ private val dayMonthFormatter: DateTimeFormatter =
 private val dayOfMonthFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("d", Locale.getDefault())
 
-/**
- * "4 – 6 Sep", or "29 Aug – 1 Sep" across a month boundary, in the device time zone. A single
- * known end falls back to [formatDate].
- */
 fun formatDateRange(startUtcMillis: Long?, endUtcMillis: Long?): String {
     if (startUtcMillis == null || endUtcMillis == null) return formatDate(startUtcMillis ?: endUtcMillis)
     val start = Instant.ofEpochMilli(startUtcMillis).atZone(zone).toLocalDate()
@@ -51,17 +44,11 @@ fun formatDateRange(startUtcMillis: Long?, endUtcMillis: Long?): String {
     }
 }
 
-/** "16:04:12" in the device time zone, for the race-control log. */
 fun formatClock(utcMillis: Long?): String =
     utcMillis?.let { clockFormatter.format(Instant.ofEpochMilli(it).atZone(zone)) } ?: ""
 
 // ---------------------------------------------------------------- countdown
 
-/**
- * A countdown in the whole units the app shows: days and hours from a day out, hours and minutes
- * under a day, then minutes (never "0 min"); [Now] once the start has passed. Shared by the Live
- * tab's next-round card and the widgets, so they always word it the same.
- */
 sealed interface CountdownUnits {
     data class DaysHours(val days: Int, val hours: Int) : CountdownUnits
     data class HoursMinutes(val hours: Int, val minutes: Int) : CountdownUnits
@@ -84,7 +71,6 @@ fun countdownUnits(remainingMillis: Long): CountdownUnits {
     }
 }
 
-/** "in 2d 14h", "in 3h 12m", "in 8 min"; "Starting now" once the start time has passed. */
 fun formatCountdown(resources: Resources, units: CountdownUnits): String = when (units) {
     is CountdownUnits.DaysHours -> resources.getString(R.string.countdown_days_hours, units.days, units.hours)
     is CountdownUnits.HoursMinutes -> resources.getString(R.string.countdown_hours_minutes, units.hours, units.minutes)

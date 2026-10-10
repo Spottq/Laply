@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Strings owned by the Live Updates feature (com.flexy.f1live.live). -->
     <string name="live_notif_connecting">Connecting&#8230;</string>
-    <!-- %1$s is the scheduled start time in the device's clock format, e.g. "15:00". -->
     <string name="live_notif_waiting">Starts at %1$s · waiting for timing</string>
     <string name="live_notif_delayed">Start delayed (was %1$s) · waiting for timing</string>
     <string name="live_notif_stop">Stop</string>

@@ -48,19 +48,6 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/*
- * Samsung One UI lock-screen (and AOD) widget, 2x2, for tablets and foldables: "NEXT ROUND · R16",
- * the Grand Prix, the next session and when, a big "in 16h 41m" countdown and the sessions after
- * it. A plain AppWidgetProvider with RemoteViews like the 2x1 ([SamsungLockWidget]), found by
- * Samsung's host through widgetCategory 0x2000 + xml/lock_2x2_info.xml + the
- * "samsung.appwidget.monotone.info" metadata; the host recolours its white TextViews.
- *
- * Sizes and the tablet-only gating follow the user's LockWidgets project (dev.flexy.lockwidgets:
- * lock_widget_2x2_info.xml, LockWidgetsApp.syncWidgetProviderComponents, WidgetDeviceCapabilities):
- * the receiver ships disabled and [syncEnabled] switches it on for sw600dp or hinge devices.
- */
-
-/** The 2x2 lock-screen widget provider. Also receives its own redraw alarm ([SamsungLockWidgetLarge.ACTION_REFRESH]). */
 class SamsungLockWidgetLargeReceiver : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -92,13 +79,6 @@ class SamsungLockWidgetLargeReceiver : AppWidgetProvider() {
     }
 }
 
-/**
- * Rendering and refresh timing of the 2x2 lock-screen widget. Redrawn only when its text changes,
- * per [WidgetPlanner.nextRefreshAt] (on the minute under a day, on the hour further out, at a
- * session start / end, at midnight), with its own alarm; no Chronometer, no seconds.
- * WidgetUpdater.refresh also calls [updateAll] (calendar fetch, reboot, app update, clock / zone
- * change), which is also where [syncEnabled] runs.
- */
 object SamsungLockWidgetLarge {
 
     const val ACTION_REFRESH = "com.flexy.f1live.widget.lock.action.REFRESH_LARGE"
@@ -109,10 +89,8 @@ object SamsungLockWidgetLarge {
     private const val SCHEDULE_TIMEOUT_MS = 6_000L
     private const val IMAGE_TIMEOUT_MS = 4_000L
 
-    /** Retry after this when no calendar could be read (offline first run, slow disk). */
     private const val RETRY_MS = 30L * WidgetPlanner.MINUTE_MS
 
-    /** As in LockWidgets' WidgetDeviceCapabilities: every foldable reports this sensor. */
     private const val FEATURE_HINGE_ANGLE = "android.hardware.sensor.hinge_angle"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -125,15 +103,10 @@ object SamsungLockWidgetLarge {
         return runCatching { manager.getAppWidgetIds(component(context)) }.getOrNull() ?: IntArray(0)
     }
 
-    /** Tablet (sw600dp) or foldable: where Samsung's lock screen has 2x2 slots. */
     fun supported(context: Context): Boolean =
         context.resources.getBoolean(R.bool.lock_large_tablet) ||
             context.packageManager.hasSystemFeature(FEATURE_HINGE_ANGLE)
 
-    /**
-     * Enables the receiver (manifest: disabled) where [supported], back to the manifest default
-     * elsewhere; a no-op when it is already right, so no PACKAGE_CHANGED broadcast every refresh.
-     */
     fun syncEnabled(context: Context) {
         val pm = context.packageManager
         val component = component(context)
@@ -148,7 +121,6 @@ object SamsungLockWidgetLarge {
             .onFailure { Log.w(TAG, "could not switch the 2x2 lock widget", it) }
     }
 
-    /** Redraws every placed 2x2 widget and re-arms the alarm. Fire and forget; [onDone] always runs. */
     fun updateAll(context: Context, onDone: (() -> Unit)? = null) {
         val app = context.applicationContext
         scope.launch {
@@ -185,7 +157,6 @@ object SamsungLockWidgetLarge {
         armAlarm(context, next, wakeup = contentChange)
     }
 
-    /** As the 2x1's: this season, plus next season's once this one is almost over; null when unreadable. */
     private suspend fun loadEntries(now: Long): List<WidgetEntry>? {
         val schedule = runCatching { Graph.schedule }.getOrNull() ?: return null
         val year = Instant.ofEpochMilli(now).atZone(ZoneOffset.UTC).year
@@ -199,11 +170,6 @@ object SamsungLockWidgetLarge {
 
     private data class WidgetSize(val maxWidthDp: Int, val maxHeightDp: Int, val minHeightDp: Int)
 
-    /**
-     * The placed widgets' reported size in dp (all instances share one RemoteViews): the largest,
-     * for the outline bitmap, and the smallest height (landscape on a tablet) for the rows, so a
-     * row never overflows in either orientation.
-     */
     private fun widgetSize(context: Context, ids: IntArray): WidgetSize {
         val manager = AppWidgetManager.getInstance(context)
         var maxWidth = 0
@@ -226,24 +192,16 @@ object SamsungLockWidgetLarge {
 
     // ------------------------------------------------------------------ circuit outline
 
-    /** Opacity of the white outline: faint on a dark wallpaper, still there on a light one. */
-    private const val OUTLINE_ALPHA = 0x3D // ~24 %
+    private const val OUTLINE_ALPHA = 0x3D
 
-    /** Share of the widget the outline may fill (it sits bottom-end, behind the text). */
     private const val OUTLINE_SHARE = 0.7f
 
-    /** Upper bound per side, whatever the host reports: keeps the RemoteViews parcel small. */
     private const val MAX_SIDE_PX = 360
 
     private data class OutlineKey(val url: String, val width: Int, val height: Int)
 
     @Volatile private var outlineCache: Pair<OutlineKey, Bitmap>? = null
 
-    /**
-     * The headline weekend's circuit outline, fitted into ~70 % of the widget and turned faint
-     * white; null when the "Circuit background" setting is off, there is no outline, or it cannot
-     * be loaded (Coil's shared loader, so usually its disk cache). Kept in memory once made.
-     */
     private suspend fun outline(context: Context, entries: List<WidgetEntry>, sizeDp: Pair<Int, Int>): Bitmap? {
         if (!AppSettings.widgetTrackBackground.value) return null
         val weekend = entries.firstOrNull()?.weekend ?: return null
@@ -262,7 +220,6 @@ object SamsungLockWidgetLarge {
                     .size(Size(key.width, key.height))
                     .scale(Scale.FIT)
                     .precision(Precision.INEXACT)
-                    // RemoteViews parcel their bitmaps: a hardware bitmap cannot be sent.
                     .allowHardware(false)
                     .build()
                 (SingletonImageLoader.get(context).execute(request) as? SuccessResult)?.image?.toBitmap()
@@ -273,7 +230,6 @@ object SamsungLockWidgetLarge {
         return tinted
     }
 
-    /** [source] scaled to fit [maxWidth] x [maxHeight], every opaque pixel white at [OUTLINE_ALPHA]. */
     private fun faintWhite(source: Bitmap, maxWidth: Int, maxHeight: Int): Bitmap {
         val scale = minOf(maxWidth.toFloat() / source.width, maxHeight.toFloat() / source.height, 1f)
         val width = (source.width * scale).toInt().coerceAtLeast(1)
@@ -311,8 +267,7 @@ object SamsungLockWidgetLarge {
             is LockWidgetPlan.Live -> plan.entry
             is LockWidgetPlan.Upcoming -> plan.entry
         }
-        // Every view that any state hides is set both ways: a host may re-apply these views onto
-        // the previous hierarchy, where an earlier GONE would otherwise stick.
+        // Set every hidden view both ways: a host may re-apply these onto the previous hierarchy.
         when (entry) {
             null -> {
                 views.setViewVisibility(R.id.lock2_overline, View.GONE)
@@ -368,7 +323,6 @@ object SamsungLockWidgetLarge {
         return views
     }
 
-    /** "Quali · Sat 16:00", or "Dutch GP · FP1 · Fri 12:30" for a session of another weekend. */
     private fun rowText(context: Context, row: WidgetEntry, headline: WidgetEntry, now: Long): String {
         val label = sessionLabel(context, row)
         val time = whenText(context, row.startUtcMillis, now)
@@ -383,7 +337,6 @@ object SamsungLockWidgetLarge {
     private val weekdayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE", Locale.getDefault())
     private val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
 
-    /** "Today 16:00", "Tomorrow 16:00", "Sat 16:00", or "Sat 4 Oct 16:00" beyond a week. */
     private fun whenText(context: Context, start: Long, now: Long): String {
         val zone = ZoneId.systemDefault()
         val time = formatTime(start)
@@ -396,7 +349,6 @@ object SamsungLockWidgetLarge {
         }
     }
 
-    /** The 2x1's short names ("FP1", "Quali", "Race"); the calendar's own name when unknown. */
     private fun sessionLabel(context: Context, entry: WidgetEntry): String =
         when (lockSessionLabel(entry.session.kind)) {
             LockSessionLabel.FP1 -> context.getString(R.string.lock_session_fp1)
@@ -409,7 +361,6 @@ object SamsungLockWidgetLarge {
             null -> entry.session.name
         }
 
-    /** Opens the app; on the lock screen the system asks to unlock first. */
     private fun openAppIntent(context: Context): PendingIntent = PendingIntent.getActivity(
         context,
         REQUEST_OPEN,
@@ -422,10 +373,6 @@ object SamsungLockWidgetLarge {
 
     // ------------------------------------------------------------------ alarm
 
-    /**
-     * Exact when allowed (USE_EXACT_ALARM is declared for auto-follow). Waking only for a session
-     * start / end; the minute and hour steps of the countdown wait for the screen to come on.
-     */
     private fun armAlarm(context: Context, triggerAt: Long, wakeup: Boolean) {
         val manager = context.getSystemService(AlarmManager::class.java) ?: return
         val pending = alarmIntent(context, PendingIntent.FLAG_UPDATE_CURRENT) ?: return

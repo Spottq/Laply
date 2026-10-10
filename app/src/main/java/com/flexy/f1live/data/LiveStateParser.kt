@@ -19,11 +19,6 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeParseException
 
-/**
- * Turns the merged SignalR snapshot (a [JsonObject] keyed by topic) into a [LiveSessionState].
- *
- * Pure JVM (no Android classes) so it can be unit tested against a captured snapshot.
- */
 object LiveStateParser {
 
     fun parse(
@@ -71,7 +66,6 @@ object LiveStateParser {
         )
     }
 
-    /** "08:00:00" -> 480, "-04:00:00" -> -240; null for anything else. */
     fun utcOffsetMinutesOf(raw: String?): Int? {
         val match = OffsetPattern.matchEntire(raw?.trim().orEmpty()) ?: return null
         val (sign, hours, minutes) = match.destructured
@@ -165,15 +159,12 @@ object LiveStateParser {
             numberOfLaps = line.int("NumberOfLaps") ?: 0,
             numberOfPitStops = line.int("NumberOfPitStops") ?: 0,
             tyreCompound = currentCompound(appData),
-            // Position 1 among everyone's personal bests is the session's fastest lap - the purple
-            // time on an F1 timing tower.
             fastestLap = stats?.obj("PersonalBestLapTime")?.int("Position") == 1,
             bestSectors = parseBestSectors(stats?.get("BestSectors")),
             stints = parseStints(appData),
         )
     }
 
-    /** "Lando" + "Norris" -> "L. Norris". */
     private fun shortNameOf(firstName: String, lastName: String, driver: JsonObject?): String = when {
         firstName.isNotBlank() && lastName.isNotBlank() ->
             firstName.trim().first().uppercaseChar() + ". " + lastName.trim()
@@ -184,7 +175,6 @@ object LiveStateParser {
     private fun parseSectors(element: JsonElement?): List<SectorTiming> =
         element?.indexedList().orEmpty().map { sector ->
             val obj = sector as? JsonObject
-            // Value is cleared when a new lap starts (out/in laps); PreviousValue keeps the last one.
             SectorTiming(
                 value = obj?.string("Value")?.takeIf { it.isNotBlank() }
                     ?: obj?.string("PreviousValue").orEmpty(),
@@ -193,11 +183,6 @@ object LiveStateParser {
             )
         }
 
-    /**
-     * `TimingStats.Lines[n].BestSectors` - the driver's best time in each sector, with the
-     * position it holds in the session. Position 1 is the session-best sector, everything else is
-     * that driver's own best, which is exactly the personal/overall distinction the row draws.
-     */
     private fun parseBestSectors(element: JsonElement?): List<SectorTiming> =
         element?.indexedList().orEmpty().map { sector ->
             val obj = sector as? JsonObject
@@ -209,10 +194,6 @@ object LiveStateParser {
             )
         }
 
-    /**
-     * `TimingAppData.Lines[n].Stints`, oldest first. `TotalLaps` is the age of the set and
-     * `StartLaps` the age it went out on, so the stint itself is the difference between the two.
-     */
     private fun parseStints(appData: JsonObject?): List<TyreStint> =
         appData?.get("Stints")?.indexedList().orEmpty().mapNotNull { element ->
             val stint = element as? JsonObject ?: return@mapNotNull null
@@ -225,7 +206,6 @@ object LiveStateParser {
             )
         }
 
-    /** Last stint that actually names a compound ("SOFT" / "MEDIUM" / ...). */
     private fun currentCompound(appData: JsonObject?): String? =
         appData?.get("Stints")?.indexedList()
             ?.asReversed()
@@ -253,10 +233,6 @@ object LiveStateParser {
             .sortedWith(compareBy(nullsFirst()) { it.utcMillis })
     }
 
-    /**
-     * Feed timestamps arrive both as full instants ("2026-09-05T14:33:08.789Z") and as zone-less
-     * local date-times ("2026-09-05T13:50:42") which are UTC by convention.
-     */
     fun parseUtcMillis(raw: String?): Long? {
         val value = raw?.trim().orEmpty()
         if (value.isEmpty()) return null
@@ -310,7 +286,6 @@ object LiveStateParser {
         else -> TrackFlag.UNKNOWN
     }
 
-    /** IOC / ISO alpha-3 nationality code -> ISO 3166-1 alpha-2, lowercase; null when unknown. */
     fun countryCodeOf(raw: String?): String? {
         val code = raw?.trim()?.uppercase()?.takeIf { it.isNotEmpty() } ?: return null
         if (code.length == 2) return code.lowercase()
@@ -354,10 +329,6 @@ object LiveStateParser {
             else -> null
         }
 
-    /**
-     * Lists arrive as JSON arrays in the snapshot but as index-keyed objects in deltas; a merged
-     * document therefore keeps the object form for anything only ever seen as a delta.
-     */
     private fun JsonElement.indexedList(): List<JsonElement> = when (this) {
         is JsonArray -> this
         is JsonObject -> entries

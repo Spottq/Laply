@@ -11,11 +11,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** The 2x1 lock-screen widget shows the running session, else the next one with its countdown. */
 class LockWidgetPlanTest {
 
     private val hour = WidgetPlanner.HOUR_MS
-    private val base = 1_757_676_600_000L // Fri 12 Sep 2025 11:30 UTC
+    private val base = 1_757_676_600_000L
 
     private val baku = RaceWeekend(
         season = 2025,
@@ -56,7 +55,6 @@ class LockWidgetPlanTest {
 
     @Test
     fun aDayOrMoreOutIsDaysHours() {
-        // After FP2 ends: the race is 43 h away.
         val plan = plan(base + 7 * hour) as LockWidgetPlan.Upcoming
         assertEquals(SessionKind.RACE, plan.entry.session.kind)
         assertEquals(Countdown.Until(CountdownUnits.DaysHours(1, 19)), plan.countdown)

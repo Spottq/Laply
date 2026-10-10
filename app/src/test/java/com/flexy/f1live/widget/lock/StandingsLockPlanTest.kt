@@ -23,7 +23,6 @@ class StandingsLockPlanTest {
     @Test
     fun `a shorter slot or a larger font gives up rows before the line`() {
         assertEquals(TablePlan(rows = 4, lineAfter = 3), StandingsLockPlan.table(124, 1f, entries = 20, contenders = 3))
-        // Three rows fit under a 1.3x font: all of them contenders, so no line at the bottom.
         assertEquals(TablePlan(rows = 3, lineAfter = null), StandingsLockPlan.table(slot, 1.3f, entries = 20, contenders = 3))
     }
 

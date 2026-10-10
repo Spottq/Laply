@@ -9,11 +9,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * The Live Update is a `Notification.ProgressStyle`, which renders **one** line of body text; these
- * tests pin the compact layout that fits three drivers into it, the status-bar chip and the race
- * progress bar.
- */
 class LiveNotificationBuilderTest {
 
     private fun driver(
@@ -136,9 +131,7 @@ class LiveNotificationBuilderTest {
             "Italy · Race · Lap 4/53 · RED FLAG",
             LiveNotificationBuilder.title(race.copy(trackFlag = TrackFlag.RED)),
         )
-        // Before the race distance is known the lap still shows on its own.
         assertEquals("Italy · Race · Lap 4", LiveNotificationBuilder.title(race.copy(totalLaps = null)))
-        // Qualifying has no lap target at all.
         assertEquals(
             "Italy · Qualifying",
             LiveNotificationBuilder.title(
@@ -186,7 +179,6 @@ class LiveNotificationBuilderTest {
             "2  $icon P. Gasly  +5.167",
             LiveNotificationBuilder.expandedText(withFastestLap).lines()[1],
         )
-        // Nobody in the top three holds it: the line is untouched.
         assertEquals("1 RUS · 2 GAS +5.167 · 3 NOR +7.212", LiveNotificationBuilder.text(race))
     }
 
@@ -332,7 +324,6 @@ class LiveNotificationBuilderTest {
         val content = LiveNotificationBuilder.build(metricRace, "Connecting")
         assertEquals(3, content.metrics.size)
         assertEquals(1, content.criticalMetric)
-        // P3's interval is not in the one-line body, yet a change of it must be re-posted.
         val closer = metricRace.copy(
             drivers = metricRace.drivers.mapIndexed { index, d ->
                 if (index == 2) d.copy(interval = "+0.301") else d

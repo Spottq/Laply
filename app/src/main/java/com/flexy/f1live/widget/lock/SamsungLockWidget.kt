@@ -46,19 +46,8 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 
-/*
- * Samsung One UI lock-screen (and AOD / cover screen) widget, 2x1: the next F1 session and a
- * countdown. It is a plain AppWidgetProvider with RemoteViews, not Glance: Samsung's lock-screen
- * host finds it through widgetCategory 0x2000 and the Samsung attributes in xml/lock_2x1_info.xml
- * plus the "samsung.appwidget.monotone.info" metadata, and recolours its white TextViews to suit
- * the wallpaper. Stock launchers never list it (they only show home-screen widgets).
- *
- * Provider / ServiceBox pattern adapted from twidget (MIT, © 2026 Josh Skinner,
- * github.com/thatjoshguy67/twidget, LockScreenFollowerWidgets.kt) and Codex-Meter (MIT,
- * SamsungLockWidgetSupport.java / SamsungLockServiceBoxReceiver.java).
- */
+// Adapted from twidget (MIT, © 2026 Josh Skinner) and Codex-Meter (MIT).
 
-/** The lock-screen widget provider. Also receives its own redraw alarm ([SamsungLockWidget.ACTION_REFRESH]). */
 class SamsungLockWidgetReceiver : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -90,11 +79,6 @@ class SamsungLockWidgetReceiver : AppWidgetProvider() {
     }
 }
 
-/**
- * Legacy Samsung SystemUI "ServiceBox" lock-screen pages: SystemUI asks with
- * REQUEST_SERVICEBOX_REMOTEVIEWS and gets our RemoteViews back. Kept because twidget still ships
- * it; harmless where nobody asks.
- */
 class SamsungLockServiceBoxReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != SamsungLockWidget.ACTION_REQUEST_SERVICEBOX) return
@@ -105,15 +89,6 @@ class SamsungLockServiceBoxReceiver : BroadcastReceiver() {
     }
 }
 
-/**
- * Rendering and refresh timing of the lock-screen widget. Like the home-screen widgets (see
- * [com.flexy.f1live.widget.WidgetUpdater]) it is redrawn only when what it shows changes, per
- * [WidgetPlanner.nextRefreshAt], with its own alarm (the home widgets' alarm is only armed while a
- * home widget is placed): hourly while the countdown shows days, every minute under a day, with
- * non-wakeup alarms (delivered as the screen comes on), waking only for a session start or end.
- * WidgetUpdater.refresh also calls [updateAll], which covers calendar fetches, reboot, app update
- * and clock / zone changes.
- */
 object SamsungLockWidget {
 
     const val ACTION_REFRESH = "com.flexy.f1live.widget.lock.action.REFRESH"
@@ -129,7 +104,6 @@ object SamsungLockWidget {
     private const val SCHEDULE_TIMEOUT_MS = 6_000L
     private const val IMAGE_TIMEOUT_MS = 4_000L
 
-    /** Retry after this when no calendar could be read (offline first run, slow disk). */
     private const val RETRY_MS = 30L * WidgetPlanner.MINUTE_MS
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -144,7 +118,6 @@ object SamsungLockWidget {
         }.getOrNull() ?: IntArray(0)
     }
 
-    /** Redraws every placed lock-screen widget and re-arms the alarm. Fire and forget; [onDone] always runs. */
     fun updateAll(context: Context, onDone: (() -> Unit)? = null) {
         val app = context.applicationContext
         scope.launch {
@@ -161,7 +134,6 @@ object SamsungLockWidget {
     private suspend fun updateNow(context: Context) {
         val ids = placedIds(context)
         if (ids.isEmpty()) {
-            // Nothing placed: no work, no alarm. A ServiceBox page asks for itself (receiver above).
             cancelAlarm(context)
             return
         }
@@ -211,11 +183,6 @@ object SamsungLockWidget {
         }
     }
 
-    /**
-     * The running session (if any) and the next one; this season's calendar, plus next season's
-     * once this one is almost over. Memory, then disk, then network (the repository's order).
-     * Null when no calendar is readable at all.
-     */
     private suspend fun loadEntries(now: Long): List<WidgetEntry>? {
         val schedule = runCatching { Graph.schedule }.getOrNull() ?: return null
         val year = Instant.ofEpochMilli(now).atZone(ZoneOffset.UTC).year
@@ -229,21 +196,17 @@ object SamsungLockWidget {
 
     // ------------------------------------------------------------------ circuit outline
 
-    /** Opacity of the white outline: faint on a dark wallpaper, still there on a light one. */
-    private const val OUTLINE_ALPHA = 0x3D // ~24 %
+    private const val OUTLINE_ALPHA = 0x3D
 
-    /** Lock-screen slot when the host reports no size: Samsung's 2x1 is about 160 x 64 dp. */
     private const val DEFAULT_WIDTH_DP = 160
     private const val DEFAULT_HEIGHT_DP = 64
 
-    /** Upper bound per side, whatever the host reports: keeps the RemoteViews parcel small. */
     private const val MAX_SIDE_PX = 400
 
     private data class OutlineKey(val url: String, val width: Int, val height: Int)
 
     @Volatile private var outlineCache: Pair<OutlineKey, Bitmap>? = null
 
-    /** The widget's largest reported size in px (all placed instances share one RemoteViews). */
     private fun widgetSizePx(context: Context, ids: IntArray): Pair<Int, Int> {
         val manager = AppWidgetManager.getInstance(context)
         var widthDp = 0
@@ -262,11 +225,6 @@ object SamsungLockWidget {
             (heightDp * density).toInt().coerceIn(1, MAX_SIDE_PX)
     }
 
-    /**
-     * The next weekend's circuit outline, fitted into [sizePx] and turned faint white, or null when
-     * the "Circuit background" setting is off, the circuit has no outline, or it cannot be loaded.
-     * Through Coil's shared loader, so usually its disk cache; the result is kept in memory.
-     */
     private suspend fun outline(context: Context, entries: List<WidgetEntry>, sizePx: Pair<Int, Int>): Bitmap? {
         if (!AppSettings.widgetTrackBackground.value) return null
         val weekend = entries.firstOrNull()?.weekend ?: return null
@@ -280,7 +238,6 @@ object SamsungLockWidget {
                     .size(Size(key.width, key.height))
                     .scale(Scale.FIT)
                     .precision(Precision.INEXACT)
-                    // RemoteViews parcel their bitmaps: a hardware bitmap cannot be sent.
                     .allowHardware(false)
                     .build()
                 (SingletonImageLoader.get(context).execute(request) as? SuccessResult)?.image?.toBitmap()
@@ -291,7 +248,6 @@ object SamsungLockWidget {
         return tinted
     }
 
-    /** [source] scaled to fit [maxWidth] x [maxHeight], every opaque pixel white at [OUTLINE_ALPHA]. */
     private fun faintWhite(source: Bitmap, maxWidth: Int, maxHeight: Int): Bitmap {
         val scale = minOf(maxWidth.toFloat() / source.width, maxHeight.toFloat() / source.height, 1f)
         val width = (source.width * scale).toInt().coerceAtLeast(1)
@@ -346,10 +302,8 @@ object SamsungLockWidget {
         return views
     }
 
-    /** The app's wording: "in 1d 13h", "in 16h 41m", "in 8 min", "Starting now". */
     private fun countdownText(context: Context, countdown: Countdown): String = when (countdown) {
         is Countdown.Until -> formatCountdown(context.resources, countdown.units)
-        // Live is drawn as LockWidgetPlan.Live and never reaches here.
         Countdown.Live -> context.getString(R.string.countdown_now)
     }
 
@@ -365,7 +319,6 @@ object SamsungLockWidget {
             null -> entry.session.name
         }
 
-    /** Opens the app; on the lock screen the system asks to unlock first. */
     private fun openAppIntent(context: Context): PendingIntent = PendingIntent.getActivity(
         context,
         REQUEST_OPEN,
@@ -378,11 +331,6 @@ object SamsungLockWidget {
 
     // ------------------------------------------------------------------ alarm
 
-    /**
-     * Exact when allowed (USE_EXACT_ALARM is declared for auto-follow). Waking only for a session
-     * start / end, which the always-on display should show on time; the hourly and per-minute
-     * countdown steps are non-wakeup and wait for the screen to come on.
-     */
     private fun armAlarm(context: Context, triggerAt: Long, wakeup: Boolean) {
         val manager = context.getSystemService(AlarmManager::class.java) ?: return
         val pending = alarmIntent(context, PendingIntent.FLAG_UPDATE_CURRENT) ?: return

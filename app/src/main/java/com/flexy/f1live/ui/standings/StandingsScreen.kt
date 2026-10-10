@@ -122,7 +122,6 @@ private fun StandingsList(
     onSelectTab: (StandingsTab) -> Unit,
     contentPadding: PaddingValues,
 ) {
-    // Large screens: one centred column rather than rows stretched edge to edge.
     CenteredColumn { gutter ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -145,7 +144,6 @@ private fun StandingsList(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    // Each tab its own points left: a team scores with both its cars.
                     val titleSummary = when (uiState.tab) {
                         StandingsTab.Drivers -> uiState.titleFight?.summary
                         StandingsTab.Constructors -> uiState.constructorsFight?.summary
@@ -185,7 +183,6 @@ private fun StandingsList(
 
             when (uiState.tab) {
                 StandingsTab.Drivers -> {
-                    // Everyone above the line can still win the title, nobody below it can.
                     val cut = uiState.titleCut ?: uiState.drivers.size
                     items(
                         items = uiState.drivers.take(cut),
@@ -237,13 +234,6 @@ private fun StandingsList(
     }
 }
 
-/**
- * Two-segment selector with a thumb that slides between the halves.
- *
- * Built by hand rather than with SingleChoiceSegmentedButtonRow: that control cross-fades its
- * selection, and the sliding thumb is the whole point here. The thumb is drawn first and the
- * labels on top of it, so a single spring animation moves the highlight without touching the text.
- */
 @Composable
 private fun TabSelector(selected: StandingsTab, onSelect: (StandingsTab) -> Unit) {
     val tabs = listOf(
@@ -275,8 +265,6 @@ private fun TabSelector(selected: StandingsTab, onSelect: (StandingsTab) -> Unit
             modifier = Modifier
                 .fillMaxWidth(1f / tabs.size)
                 .fillMaxHeight()
-                // The thumb is exactly one segment wide, so translating it by its own width lands
-                // it on the next segment. Read in the draw phase: no relayout while it slides.
                 .graphicsLayer { translationX = offset * size.width },
         ) {}
 
@@ -393,11 +381,6 @@ private fun ConstructorStandingRow(team: ConstructorStanding, leaderPoints: Doub
     }
 }
 
-/**
- * Shared row shell: P1 gets the primaryContainer accent, the rest of the podium a slightly
- * raised surface, everyone else the flat container. `content` is told whether it is drawing on
- * the accent surface so it can pick the matching "on" colour.
- */
 @Composable
 private fun StandingCard(
     position: Int,
@@ -427,9 +410,6 @@ private fun StandingCard(
             .padding(horizontal = 16.dp)
             .fillMaxWidth(),
     ) {
-        // A standings card is a single item to a screen reader. Merging also collapses ~8
-        // semantics nodes per row into one, which is what the per-frame accessibility tree walk
-        // (`getAllUncoveredSemanticsNodesToIntObjectMap`) has to iterate on every scrolled frame.
         Column(
             modifier = Modifier
                 .semantics(mergeDescendants = true) {}
@@ -479,10 +459,6 @@ private fun PointsColumn(points: Double, wins: Int, onAccentSurface: Boolean) {
     }
 }
 
-/**
- * Dashed rule under the last driver or team that can still win the title, captioned in the middle.
- * With one left above it the title is settled, and the caption says so.
- */
 @Composable
 private fun TitleCutLine(decided: Boolean) {
     val color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -518,7 +494,6 @@ private fun DashedRule(color: Color, modifier: Modifier = Modifier) {
     }
 }
 
-/** Thin proportional bar: how much of the leader's points this entry has. */
 @Composable
 private fun GapBar(fraction: Float, color: Color) {
     val safe = fraction.coerceIn(0f, 1f)
@@ -539,14 +514,6 @@ private fun GapBar(fraction: Float, color: Color) {
     }
 }
 
-/**
- * Team-coloured disc with the constructor logo inside, matching the driver discs next to it.
- *
- * Nothing is drawn under the logo: the earlier coloured bar showed through the transparent parts
- * of several marks (the Mercedes star, the Audi rings) as a stripe across the disc. When there is
- * no logo - an unknown constructor, or the CDN blocked behind a VPN exit - the tinted disc and its
- * coloured ring are the fallback on their own.
- */
 @Composable
 private fun TeamLogoDisc(constructorId: String, teamName: String, color: Color, size: Dp) {
     val logoUrl = remember(constructorId, teamName) {
@@ -571,7 +538,6 @@ private fun TeamLogoDisc(constructorId: String, teamName: String, color: Color, 
     }
 }
 
-/** Team-coloured disc showing the driver's TLA, with a small flag badge. */
 @Composable
 private fun TeamDisc(
     label: String,
@@ -591,8 +557,6 @@ private fun TeamDisc(
                 .border(2.dp, color, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            // Read in the draw phase (graphicsLayer), so a loaded headshot fades the TLA out
-            // without recomposing or re-measuring the row.
             val loaded = remember(headshotUrl) { mutableStateOf(false) }
             Text(
                 text = label,
@@ -617,7 +581,6 @@ private fun TeamDisc(
         if (flagUrl != null) {
             AsyncImage(
                 model = flagUrl,
-                // Decorative: the merged card already announces driver and team.
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -630,7 +593,6 @@ private fun TeamDisc(
     }
 }
 
-/** "242" rather than "242.0", but "18.5" keeps its half point. */
 private fun formatPoints(points: Double): String =
     if (points == points.toLong().toDouble()) points.toLong().toString() else points.toString()
 

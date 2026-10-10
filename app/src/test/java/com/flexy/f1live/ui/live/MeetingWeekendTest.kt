@@ -5,7 +5,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-/** The live meeting -> calendar weekend lookup behind the large-screen track map. */
 class MeetingWeekendTest {
 
     private fun weekend(round: Int, name: String, country: String, locality: String, circuit: String) =

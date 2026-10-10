@@ -7,14 +7,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 
-    <!-- Auto-follow: one exact alarm a few minutes before the next session. Only an exact alarm
-         may start a foreground service from the background (Android 12+). USE_EXACT_ALARM is
-         granted at install on API 33+; on API 31/32 SCHEDULE_EXACT_ALARM is granted by default. -->
     <uses-permission
         android:name="android.permission.SCHEDULE_EXACT_ALARM"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-    <!-- Alarms do not survive a reboot; the receiver only re-arms it, it never starts the service. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
@@ -36,9 +32,7 @@
             </intent-filter>
         </activity>
 
-        <!-- specialUse, not dataSync: this is a user-visible live scoreboard, not a transfer, and
-             Android 15 caps dataSync at 6 h per 24 h - a race weekend day with a delayed race can
-             hit that and get the service killed mid-session. -->
+        <!-- specialUse, not dataSync: Android 15 caps dataSync at 6 h a day, which a delayed race can hit. -->
         <service
             android:name=".live.LiveUpdateService"
             android:exported="false"
@@ -60,10 +54,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- Home-screen widget: one "Laply" picker entry, resizable from 2x1 up; its redraw
-             alarm goes through AutoFollowReceiver above. semConfigureActivity puts "Settings" in
-             One UI Home's long-press menu (as in twidget / blur-widget-demo, MIT (c) 2026 Josh
-             Skinner); widgetinfo lists the cell sizes One UI may resize it to. -->
+        <!-- Home-screen widget -->
         <receiver
             android:name=".widget.NextSessionWidgetReceiver"
             android:exported="true"
@@ -82,9 +73,7 @@
                 android:value="com.flexy.f1live.widget.WidgetConfigActivity" />
         </receiver>
 
-        <!-- Standings widgets (widget/standings): the drivers' and constructors' tables and the
-             title fight, each its own picker entry, from 2x2 up. Their refresh alarm goes through
-             AutoFollowReceiver too; the settings and One UI entries are the session widget's. -->
+        <!-- Standings widgets -->
         <receiver
             android:name=".widget.standings.DriverStandingsWidgetReceiver"
             android:exported="true"
@@ -139,8 +128,7 @@
                 android:value="com.flexy.f1live.widget.WidgetConfigActivity" />
         </receiver>
 
-        <!-- The widget's appearance settings, from its long-press menu (and not forced on add:
-             configuration_optional). Exported: the launcher starts it. -->
+        <!-- Widget settings -->
         <activity
             android:name=".widget.WidgetConfigActivity"
             android:excludeFromRecents="true"
@@ -153,9 +141,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Samsung One UI lock-screen / AOD / cover-screen widget, 2x1 (widget/lock). Found by
-             Samsung's host through widgetCategory 0x2000 and the samsung.appwidget.monotone.info
-             metadata; stock launchers never list it. Redraws itself via its own alarm. -->
+        <!-- Samsung lock-screen widget, 2x1 -->
         <receiver
             android:name=".widget.lock.SamsungLockWidgetReceiver"
             android:exported="true"
@@ -171,7 +157,7 @@
                 android:resource="@xml/lock_2x1_info_oneui" />
         </receiver>
 
-        <!-- Legacy Samsung SystemUI lock-screen "ServiceBox" pages ask for RemoteViews here. -->
+        <!-- Legacy Samsung lock-screen ServiceBox -->
         <receiver
             android:name=".widget.lock.SamsungLockServiceBoxReceiver"
             android:exported="true">
@@ -180,10 +166,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- Samsung One UI lock-screen / AOD widget, 2x2, for tablets and foldables
-             (widget/lock/SamsungLockWidgetLarge.kt). Disabled here: SamsungLockWidgetLarge.syncEnabled
-             switches it on at run time on sw600dp / hinge devices only, as the LockWidgets project
-             does, so phones never list it. Redraws itself via its own alarm. -->
+        <!-- Samsung lock-screen widget, 2x2: enabled at run time on tablets and foldables only -->
         <receiver
             android:name=".widget.lock.SamsungLockWidgetLargeReceiver"
             android:enabled="false"
@@ -200,7 +183,7 @@
                 android:resource="@xml/lock_2x2_info_oneui" />
         </receiver>
 
-        <!-- Lock-screen standings widgets, 2x2: switched on by StandingsLockWidget.syncEnabled. -->
+        <!-- Samsung lock-screen standings widgets, 2x2: enabled at run time on tablets and foldables only -->
         <receiver
             android:name=".widget.lock.DriverStandingsLockWidgetReceiver"
             android:enabled="false"

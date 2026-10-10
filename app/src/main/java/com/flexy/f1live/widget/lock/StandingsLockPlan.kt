@@ -10,7 +10,6 @@ object StandingsLockPlan {
     const val MAX_CHASERS = 2
     const val MAX_LEADER_LINES = 2
 
-    // Measured from widget_lock_standings_*.xml and widget_lock_title_fight.xml.
     private const val PADDING_DP = 20f
     private const val OVERLINE_SP = 12f
     private const val ROW_SP = 15.5f

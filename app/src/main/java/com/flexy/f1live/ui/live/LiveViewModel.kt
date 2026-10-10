@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-/** The soonest session that has not started yet, with the weekend it belongs to. */
 data class UpcomingSession(val weekend: RaceWeekend, val session: ScheduledSession)
 
 class LiveViewModel : ViewModel() {
@@ -32,7 +31,6 @@ class LiveViewModel : ViewModel() {
             initialValue = Graph.liveTiming.state.value,
         )
 
-    /** The persisted Follow opt-in - not whether a Live Update happens to be showing right now. */
     val isFollowing: StateFlow<Boolean> = LiveUpdateController.followEnabled
 
     private val _lastError = MutableStateFlow<String?>(null)
@@ -41,14 +39,9 @@ class LiveViewModel : ViewModel() {
     private val _nextSession = MutableStateFlow<UpcomingSession?>(null)
     val nextSession: StateFlow<UpcomingSession?> = _nextSession.asStateFlow()
 
-    /**
-     * The circuit of the meeting on screen, for the large-screen layout's circuit card. Resolved
-     * once per meeting: the live state only names it, the calendar supplies the circuit.
-     */
     private val _circuit = MutableStateFlow<CircuitOutline?>(null)
     val circuit: StateFlow<CircuitOutline?> = _circuit.asStateFlow()
 
-    /** The forecast for the weekend coming up. */
     private val _nextWeather = MutableStateFlow<WeekendWeather>(WeekendWeather.Loading)
     val nextWeather: StateFlow<WeekendWeather> = _nextWeather.asStateFlow()
 
@@ -77,7 +70,6 @@ class LiveViewModel : ViewModel() {
         loadNextSession()
     }
 
-    /** Called when the Live screen becomes visible. */
     fun onScreenVisible() {
         _lastError.value = null
         LiveUpdateController.attachUi()
@@ -85,35 +77,22 @@ class LiveViewModel : ViewModel() {
         refreshWeather()
     }
 
-    /**
-     * Re-asks for the next weekend's forecast; the repository answers from memory within the hour.
-     * The card keeps showing the forecast it has meanwhile.
-     */
     private fun refreshWeather() {
         val weekend = _nextSession.value?.weekend ?: return
         viewModelScope.launch {
             val weather = Graph.weather.forecast(weekend)
             if (_nextSession.value?.weekend != weekend) return@launch
-            // An hour-old forecast beats none when the refresh fails.
             val keepOld = weather is WeekendWeather.Unavailable &&
                 _nextWeather.value is WeekendWeather.Ready
             if (!keepOld) _nextWeather.value = weather
         }
     }
 
-    /**
-     * Recomputes [nextSession] when it is missing or has already started: it is picked once, so a
-     * session that ran while the screen stayed open would otherwise still be announced as "next".
-     */
     fun refreshNextSessionIfStale() {
         val start = _nextSession.value?.session?.startUtcMillis
         if (start == null || start <= System.currentTimeMillis()) loadNextSession()
     }
 
-    /**
-     * Called when the Live screen leaves composition. The SignalR connection is a shared
-     * singleton: while the Live Update runs, the foreground service owns it and it must stay alive.
-     */
     fun onScreenGone() {
         LiveUpdateController.detachUi()
     }
@@ -129,7 +108,6 @@ class LiveViewModel : ViewModel() {
         val season = Calendar.getInstance().get(Calendar.YEAR)
         val weekends = Graph.schedule.getSeason(season).getOrNull() ?: return null
         val weekend = findMeetingWeekend(weekends, meeting) ?: return null
-        // The Wikipedia lookup only runs for the circuits F1 publishes no outline for.
         val fallback = if (CircuitOutline.needsFallback(weekend)) {
             Graph.circuitMaps.resolve(weekend)
         } else {
@@ -151,13 +129,8 @@ class LiveViewModel : ViewModel() {
     }
 }
 
-/** What the live feed says about the meeting: enough to find it in the season calendar. */
 internal data class MeetingKey(val name: String, val country: String, val location: String)
 
-/**
- * The calendar weekend a live meeting belongs to: by Grand Prix name first, then by country - and,
- * for countries with more than one round, by the town or the circuit.
- */
 internal fun findMeetingWeekend(weekends: List<RaceWeekend>, meeting: MeetingKey): RaceWeekend? {
     if (meeting.name.isNotBlank()) {
         weekends.firstOrNull { it.name.equals(meeting.name, ignoreCase = true) }?.let { return it }

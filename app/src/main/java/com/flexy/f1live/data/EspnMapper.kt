@@ -17,24 +17,8 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeParseException
 
-/**
- * Pure-JVM mapping of ESPN's public racing endpoints onto the app's [LiveSessionState].
- *
- * ESPN is the *fallback* feed: it is reachable from networks where CloudFront blocks the official
- * F1 SignalR endpoint, but it carries far less detail (no sectors, no last lap, no tyres, no
- * weather, no Q1/Q2/Q3 split). Three documents feed the mapping:
- *
- *  1. `site.web.api.espn.com/.../racing/f1/scoreboard` - event/competition identity, session state
- *     and the live running order (`competitors[].order`).
- *  2. `sports.core.api.espn.com/.../competitors` - car number, constructor and team colour.
- *  3. `.../competitors/{id}/statistics` and `.../status` - lap times, gaps, laps, pit stops.
- *
- * Everything here is deliberately free of Android and OkHttp so it can be unit tested; the polling
- * and the HTTP live in [EspnLiveClient].
- */
 object EspnMapper {
 
-    /** A driver as the scoreboard sees them: identity plus the current running order. */
     data class Athlete(
         val competitorId: String,
         val order: Int,
@@ -43,7 +27,6 @@ object EspnMapper {
         val flagAlt: String?,
     )
 
-    /** One session ("competition") of one event, as picked from the scoreboard. */
     data class Competition(
         val eventId: String,
         val competitionId: String,
@@ -51,13 +34,10 @@ object EspnMapper {
         val country: String,
         val city: String,
         val circuitName: String,
-        /** ESPN circuit id; `.../circuits/{id}` is where the scheduled lap count lives. */
         val circuitId: String,
         val sessionName: String,
         val sessionKind: SessionKind,
-        /** ESPN status state: "pre" (scheduled), "in" (live), "post" (final). */
         val state: String,
-        /** ESPN status type name: STATUS_IN_PROGRESS / STATUS_SESSION_COMPLETE / STATUS_FINAL / ... */
         val statusName: String = "",
         val startUtcMillis: Long?,
         val endUtcMillis: Long?,
@@ -68,7 +48,6 @@ object EspnMapper {
             get() = sessionKind == SessionKind.QUALIFYING || sessionKind == SessionKind.SPRINT_QUALIFYING
     }
 
-    /** Car details from the core API; `order` there is the live position as well. */
     data class Vehicle(
         val competitorId: String,
         val order: Int,
@@ -79,19 +58,12 @@ object EspnMapper {
         val statusRef: String?,
     )
 
-    /** `.../competitors/{id}/status`: STATUS_ON_TRACK / STATUS_IN_PITS / STATUS_RETIRED / ... */
     data class CompetitorStatus(val name: String, val period: Int?)
 
-    /**
-     * `.../competitions/{id}/status`: the only place ESPN publishes the track flag ("GREEN",
-     * "YELLOW", "RED", ...) and the lap the race is on (`period`). Neither appears on the
-     * scoreboard, so [EspnLiveClient] reads this document on every poll.
-     */
     data class CompetitionStatus(val flag: String?, val period: Int?, val statusName: String)
 
     // ------------------------------------------------------------------ scoreboard
 
-    /** Flattens `events[].competitions[]` into one list; unparsable entries are skipped. */
     fun parseScoreboard(root: JsonObject): List<Competition> {
         val events = root["events"].array()
         return events.mapNotNull { it as? JsonObject }.flatMap { event ->
@@ -145,16 +117,10 @@ object EspnMapper {
             )
         }.sortedBy { if (it.order > 0) it.order else Int.MAX_VALUE }
 
-    /** The session in progress, if any. */
     fun pickLive(competitions: List<Competition>): Competition? =
         competitions.filter { it.state == "in" }
             .maxByOrNull { it.startUtcMillis ?: Long.MIN_VALUE }
 
-    /**
-     * The results worth showing when nothing is running: the latest event that has a finished
-     * competition, and inside it the finished competition with the latest date. Fed by the season
-     * scoreboard (`?dates=YYYY`), which lists every event of the year with its per-session state.
-     */
     fun pickLastCompleted(competitions: List<Competition>): Competition? {
         val finished = competitions.filter { it.state == "post" }
         if (finished.isEmpty()) return null
@@ -171,7 +137,6 @@ object EspnMapper {
 
     // ------------------------------------------------------------------ core API
 
-    /** Parses the core API's competitor list (car numbers, constructors, colours, sub-refs). */
     fun parseCompetitors(root: JsonObject): List<Vehicle> =
         root["items"].array().mapNotNull { it as? JsonObject }.mapNotNull { item ->
             val id = item.string("id") ?: return@mapNotNull null
@@ -187,14 +152,11 @@ object EspnMapper {
             )
         }
 
-    /** The core API nests sub-documents behind a literal `${'$'}ref` key. */
     private const val REF = "\$ref"
 
-    /** ESPN hands out `http://` reference links; the app talks https only. */
     fun httpsRef(ref: String): String =
         if (ref.startsWith("http://")) "https://" + ref.removePrefix("http://") else ref
 
-    /** Flattens `splits.categories[].stats[]` into `name -> displayValue`. */
     fun parseStatistics(root: JsonObject): Map<String, String> {
         val categories = root.obj("splits")?.get("categories").array()
         val stats = LinkedHashMap<String, String>()
@@ -214,14 +176,8 @@ object EspnMapper {
         statusName = root.obj("type")?.string("name").orEmpty(),
     )
 
-    /** `.../circuits/{id}` carries the scheduled race distance in laps; 53 at Monza. */
     fun parseCircuitLaps(root: JsonObject): Int? = root.string("laps")?.toIntOrNull()?.takeIf { it > 0 }
 
-    /**
-     * ESPN spells the flag out where the SignalR feed uses a numeric code. It is coarse - the
-     * scoreboard often sits on "GREEN" through a stoppage - but it is the only flag the fallback
-     * gets at all.
-     */
     fun trackFlagOf(raw: String?): TrackFlag = when (raw?.trim()?.uppercase()) {
         "GREEN", "WHITE", "CHEQUERED", "CHECKERED" -> TrackFlag.GREEN
         "YELLOW", "DOUBLE YELLOW" -> TrackFlag.YELLOW
@@ -245,9 +201,7 @@ object EspnMapper {
         statistics: Map<String, Map<String, String>>,
         statuses: Map<String, CompetitorStatus>,
         nowUtcMillis: Long,
-        /** `.../competitions/{id}/status`; null when the document could not be read. */
         competitionStatus: CompetitionStatus? = null,
-        /** Scheduled race distance from `.../circuits/{id}`, so the Live Update can show L4/53. */
         totalLaps: Int? = null,
     ): LiveSessionState {
         val drivers = competition.athletes.map { athlete ->
@@ -265,10 +219,6 @@ object EspnMapper {
             ),
         )
 
-        // The competition's `period` is the lap the race is on, which is one ahead of the leader's
-        // completed laps and, unlike them, does not go backwards when a driver's document is stale.
-        // After the chequered flag `period` still points one past the distance ("Lap 57/56"), so
-        // it is capped at the race length when that is known.
         val leaderLap = maxOf(
             drivers.firstOrNull()?.numberOfLaps ?: 0,
             competitionStatus?.period ?: 0,
@@ -282,7 +232,7 @@ object EspnMapper {
             circuitShortName = competition.city,
             sessionName = competition.sessionName,
             sessionKind = competition.sessionKind,
-            sessionPart = null, // ESPN never reports the Q1/Q2/Q3 split.
+            sessionPart = null,
             status = statusOf(competition.state, competition.statusName),
             trackFlag = trackFlagOf(competitionStatus?.flag),
             airTempC = null,
@@ -320,7 +270,6 @@ object EspnMapper {
             shortName = athlete.shortName.ifBlank { full },
             teamName = vehicle?.manufacturer.orEmpty(),
             teamColorHex = vehicle?.teamColorHex,
-            // ESPN's racing feed carries no driver headshots; use the F1 media table by TLA.
             headshotUrl = DriverHeadshots.forTla(tla),
             countryCode = DriverNationality.forTla(tla) ?: countryCodeOfFlagAlt(athlete.flagAlt),
             bestLapTime = bestLapTimeOf(competition, stats),
@@ -335,25 +284,15 @@ object EspnMapper {
             knockedOut = false,
             numberOfLaps = stats["lapsCompleted"]?.toIntOrNull() ?: status?.period ?: 0,
             numberOfPitStops = stats["pitsTaken"]?.toIntOrNull() ?: 0,
-            tyreCompound = null, // ESPN does not publish tyre compounds.
+            tyreCompound = null,
         )
     }
 
-    /**
-     * The live gap to the leader. ESPN publishes it under `gapToLeader` in the category of the same
-     * name while the race runs, and switches to `behindTime` in the final classification; the leader
-     * has neither. Both are already formatted ("+5.167", "1 LAP").
-     */
     fun gapOf(stats: Map<String, String>): String =
         listOf("gapToLeader", "behindTime")
             .firstNotNullOfOrNull { stats[it]?.trim()?.takeIf(::isRealTime) }
             .orEmpty()
 
-    /**
-     * Qualifying publishes one time per part; the latest one that carries an actual time wins
-     * (a part that has not run yet reads "0.000"). Races show gaps instead of lap times, and
-     * practice reports its best lap as `totalTime`.
-     */
     fun bestLapTimeOf(competition: Competition, stats: Map<String, String>): String = when {
         competition.isRace -> ""
         competition.isQualifying ->
@@ -368,11 +307,6 @@ object EspnMapper {
         return trimmed.isNotEmpty() && trimmed != "0.000" && trimmed != "0" && trimmed != "--"
     }
 
-    /**
-     * ESPN leaves a session in state "in" for a while after the flag falls, flipping only the type
-     * name (STATUS_SESSION_COMPLETE, then STATUS_FINAL). Those read as finished so the UI does not
-     * claim a completed qualifying is still running.
-     */
     fun statusOf(state: String, statusName: String = ""): SessionStatus {
         val name = statusName.trim().uppercase()
         if (name.contains("COMPLETE") || name.contains("FINAL") || name.contains("CLASSIFIED")) {
@@ -388,11 +322,6 @@ object EspnMapper {
 
     // ------------------------------------------------------------------ naming
 
-    /**
-     * "Pirelli Italian Grand Prix" -> "Italian Grand Prix": everything before the qualifier that
-     * precedes "Grand Prix" is a sponsor. A handful of qualifiers are two words ("United States",
-     * "Abu Dhabi", ...) and are kept whole. Names without "Grand Prix" are left untouched.
-     */
     fun stripSponsor(name: String): String {
         val words = name.trim().split(' ').filter { it.isNotBlank() }
         if (words.isEmpty()) return name.trim()
@@ -410,7 +339,6 @@ object EspnMapper {
         "united", "las", "abu", "sao", "são", "emilia", "saudi", "mexico", "new", "san", "great",
     )
 
-    /** "FP1" -> "Practice 1", "SS" -> "Sprint Qualifying", "SR" -> "Sprint". */
     fun sessionNameOf(typeText: String, abbreviation: String): String =
         when (abbreviation.trim().uppercase()) {
             "FP1" -> "Practice 1"
@@ -423,10 +351,6 @@ object EspnMapper {
             else -> typeText.trim().ifBlank { abbreviation.trim() }
         }
 
-    /**
-     * "George Russell" -> "RUS", "Andrea Kimi Antonelli" -> "ANT". The last word of the name wins,
-     * ignoring generational suffixes ("Carlos Sainz Jr." -> "SAI").
-     */
     fun tlaOf(fullName: String): String {
         val words = fullName.trim().split(' ', '-')
             .map { it.trim().trim('.', ',') }
@@ -437,7 +361,6 @@ object EspnMapper {
 
     private val NAME_SUFFIXES = setOf("jr", "jnr", "sr", "snr", "ii", "iii", "iv")
 
-    /** ESPN gives nationalities as flag alt text; map the ones that appear on an F1 grid. */
     fun countryCodeOfFlagAlt(alt: String?): String? {
         val key = alt?.trim()?.lowercase()?.takeIf { it.isNotEmpty() } ?: return null
         return FLAG_ALT_TO_ALPHA2[key]
@@ -456,7 +379,6 @@ object EspnMapper {
 
     // ------------------------------------------------------------------ utilities
 
-    /** ESPN stamps look like "2026-09-05T14:00Z" (no seconds) as well as full instants. */
     fun parseUtcMillis(raw: String?): Long? {
         val value = raw?.trim().orEmpty()
         if (value.isEmpty()) return null

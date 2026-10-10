@@ -48,53 +48,22 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 
-/**
- * Everything a widget draws, computed once for all widget instances and sizes. [nowMillis] is the
- * moment it was computed: the countdown text is relative to it, which is also why every refresh
- * produces a new snapshot and so a recomposition of any running widget session.
- */
 data class WidgetSnapshot(
     val nowMillis: Long,
     val entries: List<WidgetEntry>,
-    /** False when no calendar could be read at all (first run offline). */
     val calendarLoaded: Boolean,
-    /** Flag bitmaps by lowercase ISO country code; missing ones are simply not drawn. */
     val flags: Map<String, Bitmap>,
-    /** The first listed weekend's track outline (dark line on transparency), tinted when drawn. */
     val outline: Bitmap?,
-    /**
-     * [outline] cropped to bleed off two edges, per corner it is pinned to, for the faint
-     * background decoration; empty when that setting is off or there is no outline.
-     */
     val decorations: Map<DecorationCorner, Bitmap>,
     val dynamicColor: Boolean,
-    /**
-     * The One UI blur style, when the setting is on and this is One UI 7+; each widget still only
-     * uses it when One UI Home hosts it. Null: the normal opaque widget everywhere.
-     */
     val glass: GlassStyle? = null,
-    /** A widget-picker preview: text countdowns only, since a Chronometer there would be frozen. */
     val preview: Boolean = false,
 )
 
-/** Translucent One UI glass: the tint's [alpha] (1..254) and whether it is light or dark. */
 data class GlassStyle(val alpha: Int, val tone: ThemeMode)
 
-/** Where the background circuit sits; its crop bleeds off the two edges of that corner. */
 enum class DecorationCorner { BottomEnd, TopEnd }
 
-/**
- * Data, refresh timing and previews for the home-screen widgets.
- *
- * Refresh strategy: widgets are redrawn only when what they show changes, per
- * [WidgetPlanner.nextRefreshAt]. One non-wakeup exact alarm is armed for that moment (a sleeping
- * phone has nobody looking at its home screen; the alarm is delivered when it wakes). Under a day
- * before a session the countdown is a system Chronometer ticking by itself, so there are no
- * per-minute redraws. The alarm goes through [AutoFollowReceiver], which already gets the
- * reboot / clock / time-zone / app-update broadcasts after which widgets must be redrawn too (a
- * Chronometer is anchored to elapsedRealtime, which a reboot resets). A calendar fetch and the
- * two appearance settings (dynamic colour, circuit background) also redraw.
- */
 object WidgetUpdater {
 
     const val ACTION_WIDGET_REFRESH = "com.flexy.f1live.widget.action.REFRESH"
@@ -104,7 +73,6 @@ object WidgetUpdater {
     private const val SCHEDULE_TIMEOUT_MS = 6_000L
     private const val IMAGE_TIMEOUT_MS = 4_000L
 
-    /** A snapshot this fresh is reused by the next widget session instead of being rebuilt. */
     private const val REUSE_MS = 10_000L
 
     private const val PREFS = "widgets"
@@ -112,11 +80,9 @@ object WidgetUpdater {
     private const val KEY_PREVIEW_APPEARANCE = "preview_appearance"
     private const val PREVIEW_INTERVAL_MS = 12L * 60L * 60L * 1000L
 
-    /** Flag PNGs are 80 px wide; the outline canvas is 121 x 85 - drawn at ~120 dp, so 2x. */
     private val FLAG_SIZE = Size(80, 60)
     private val OUTLINE_SIZE = Size(242, 170)
 
-    /** Share of the outline kept on each axis for the background decoration; the rest bleeds off. */
     private const val DECORATION_KEEP = 0.8f
 
     val receivers: List<Class<out F1WidgetReceiver>> = listOf(
@@ -126,35 +92,27 @@ object WidgetUpdater {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val lock = Mutex()
 
-    /** Serialises [pushAll]: Glance allows one direct composition per widget id at a time. */
     private val pushLock = Mutex()
 
-    /** One preview publish at a time: every refused call still counts against the rate limit. */
     private val previewLock = Mutex()
 
     private val _snapshot = MutableStateFlow<WidgetSnapshot?>(null)
-
-    /** The latest snapshot; running widget sessions collect it, so a refresh recomposes them. */
     val snapshot: StateFlow<WidgetSnapshot?> = _snapshot.asStateFlow()
 
-    /** Called once from F1App.onCreate. */
     fun attach(app: Application) {
         scope.launch {
-            // Monet on/off changes every colour of the widget.
             AppSettings.dynamicColor.drop(1).distinctUntilChanged().collect {
                 refresh(app)
                 publishPreviewsIfDue(app, force = true)
             }
         }
         scope.launch {
-            // The circuit background switch in Settings: redraw every placed widget right away.
             AppSettings.widgetTrackBackground.drop(1).distinctUntilChanged().collect {
                 refresh(app)
                 publishPreviewsIfDue(app, force = true)
             }
         }
         scope.launch {
-            // The One UI glass settings: blur on/off, opacity, tone. Previews never show glass.
             combine(
                 AppSettings.widgetSamsungBlur,
                 AppSettings.widgetBlurAlpha,
@@ -167,15 +125,9 @@ object WidgetUpdater {
         scope.launch { publishPreviewsIfDue(app) }
     }
 
-    /**
-     * Rebuilds the snapshot and redraws every placed widget. Fire and forget; [onDone] runs in all
-     * cases (a receiver's goAsync() finish).
-     */
     fun refresh(context: Context, onDone: (() -> Unit)? = null) {
         val app = context.applicationContext
-        // Samsung lock-screen widget (widget/lock, separate RemoteViews provider): same triggers.
         com.flexy.f1live.widget.lock.SamsungLockWidget.updateAll(app)
-        // Its 2x2 sibling for tablets / foldables (also switches that receiver on where supported).
         com.flexy.f1live.widget.lock.SamsungLockWidgetLarge.updateAll(app)
         scope.launch {
             try {
@@ -198,14 +150,7 @@ object WidgetUpdater {
         val glanceManager = GlanceAppWidgetManager(context)
         val appWidgetManager = AppWidgetManager.getInstance(context)
         val widget = F1Widget()
-        // Composed right here and pushed straight to the launcher, for every placed widget at
-        // once: GlanceAppWidget.update() would start each idle widget's session through
-        // WorkManager, which can run it many seconds later (a settings change then reached one
-        // widget long after the other). A session still running recomposes from [snapshot] too.
-        // One direct composition per widget at a time: two overlapping refreshes (an app update
-        // and a calendar fetch, say) would otherwise both claim the same widget id.
         pushLock.withLock { pushAll(context, ids, glanceManager, appWidgetManager, widget) }
-        // Picker previews refused by the system's rate limit are retried with the next redraw.
         publishPreviewsIfDue(context)
     }
 
@@ -228,10 +173,6 @@ object WidgetUpdater {
         }
     }
 
-    /**
-     * The snapshot for a widget session: reused when it is younger than [maxAgeMs] (several widgets
-     * and sizes render in the same second), rebuilt otherwise. Rebuilding also re-arms the alarm.
-     */
     suspend fun current(context: Context, maxAgeMs: Long = REUSE_MS): WidgetSnapshot = lock.withLock {
         val now = System.currentTimeMillis()
         _snapshot.value?.let { cached ->
@@ -249,7 +190,6 @@ object WidgetUpdater {
         built
     }
 
-    /** A snapshot for the widget picker: real data, but never a ticking Chronometer. */
     suspend fun previewSnapshot(context: Context): WidgetSnapshot =
         build(context, System.currentTimeMillis(), preview = true)
 
@@ -285,10 +225,6 @@ object WidgetUpdater {
             null
         }
 
-    /**
-     * This season, plus next season's once this one has nothing left (December). The repository
-     * serves memory, then its disk copy, and only then the network. Null when nothing is readable.
-     */
     private suspend fun loadWeekends(now: Long): List<RaceWeekend>? {
         val schedule = runCatching { Graph.schedule }.getOrNull() ?: return null
         val year = Instant.ofEpochMilli(now).atZone(ZoneOffset.UTC).year
@@ -303,11 +239,6 @@ object WidgetUpdater {
         return current.orEmpty() + next.orEmpty()
     }
 
-    /**
-     * Flags of every listed weekend and the first weekend's outline, through Coil's shared loader
-     * (and so its disk cache, which the app has usually filled already). Each image has its own
-     * timeout; offline and uncached simply means no image.
-     */
     private suspend fun loadImages(
         context: Context,
         entries: List<WidgetEntry>,
@@ -329,7 +260,6 @@ object WidgetUpdater {
                 val request = ImageRequest.Builder(context)
                     .data(url)
                     .size(size)
-                    // RemoteViews parcel their bitmaps: a hardware bitmap cannot be sent.
                     .allowHardware(false)
                     .build()
                 (SingletonImageLoader.get(context).execute(request) as? SuccessResult)
@@ -337,11 +267,6 @@ object WidgetUpdater {
             }.getOrNull()
         }
 
-    /**
-     * The outline cropped so that, pinned to a corner, it runs off that corner's two edges: the
-     * part kept is the one facing into the widget. Made once per snapshot so every size and
-     * widget shares the same Bitmap instances (RemoteViews de-duplicates them by identity).
-     */
     private fun decorations(outline: Bitmap): Map<DecorationCorner, Bitmap> {
         val width = outline.width
         val height = outline.height
@@ -367,11 +292,6 @@ object WidgetUpdater {
 
     // ------------------------------------------------------------------ alarm
 
-    /**
-     * Non-wakeup and exact: nobody sees a widget on a sleeping phone, and when it wakes the pending
-     * alarm is delivered straight away. USE_EXACT_ALARM (already declared for auto-follow) makes it
-     * exact; without it a plain alarm is still close enough for an hour-accurate countdown.
-     */
     private fun armAlarm(context: Context, triggerAt: Long) {
         if (placedWidgetIds(context).isEmpty()) {
             cancelAlarm(context)
@@ -410,12 +330,6 @@ object WidgetUpdater {
 
     // ------------------------------------------------------------------ picker previews
 
-    /**
-     * Android 15+ widget pickers show a preview generated from the real widget. Publishing is
-     * rate-limited by the system, so it happens at most every [PREVIEW_INTERVAL_MS], or when the
-     * app was updated or an appearance setting changed; older launchers use the static
-     * previewLayout from the provider XML.
-     */
     fun publishPreviewsIfDue(context: Context, force: Boolean = false) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return
         val app = context.applicationContext
@@ -432,11 +346,9 @@ object WidgetUpdater {
     private suspend fun publishPreviews(app: Context, force: Boolean) {
         val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val now = System.currentTimeMillis()
-        // Both appearance settings folded into one value: a change of either republishes.
         val appearance = (if (AppSettings.dynamicColor.value) 1 else 0) +
             (if (AppSettings.widgetTrackBackground.value) 2 else 0)
         val publishedAt = prefs.getLong(KEY_PREVIEW_AT, 0L)
-        // An app update may change how the widget looks: its previews are then out of date.
         val installedAt = runCatching {
             app.packageManager.getPackageInfo(app.packageName, 0).lastUpdateTime
         }.getOrDefault(0L)
@@ -447,7 +359,6 @@ object WidgetUpdater {
         if (!due) return
         val manager = GlanceAppWidgetManager(app)
         var allPublished = true
-        // The standings widgets' entries too: one schedule for every preview of the app.
         for (receiver in receivers + StandingsWidgetUpdater.receivers) {
             val result = runCatching {
                 manager.setWidgetPreviews(
@@ -456,7 +367,6 @@ object WidgetUpdater {
                 )
             }.onFailure { Log.w(TAG, "widget preview failed", it) }.getOrNull()
             if (result != GlanceAppWidgetManager.SET_WIDGET_PREVIEWS_RESULT_SUCCESS) {
-                // Usually the system's rate limit: stop here, the next redraw or app start retries.
                 Log.i(TAG, "widget preview for ${receiver.simpleName} not published: $result")
                 allPublished = false
                 break

@@ -15,7 +15,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** [JsonStore] takes a plain [java.io.File], so the whole cache is testable without Android. */
 class JsonStoreTest {
 
     @get:Rule

@@ -1,20 +1,9 @@
 package com.flexy.f1live.data
 
-/**
- * Team logos from F1's media CDN: a small transparent WEBP per constructor, drawn in white so it
- * reads on the app's dark surfaces.
- *
- * `https://media.formula1.com/image/upload/c_fit,h_400/q_auto/common/f1/{season}/{slug}/{season}{slug}logowhite.webp`
- *
- * The slug is F1's own, not the Ergast `constructorId` ("red_bull" is "redbullracing", "sauber" is
- * "audi" from 2026 on), so both the id table and the display-name table below are hand-mapped.
- * Unknown constructors return null and the UI keeps its plain coloured disc.
- */
 object TeamLogos {
 
     private const val BASE = "https://media.formula1.com/image/upload/c_fit,h_400/q_auto/common/f1/"
 
-    /** Ergast `constructorId` -> F1 media slug. */
     private val BY_CONSTRUCTOR_ID: Map<String, String> = mapOf(
         "mclaren" to "mclaren",
         "ferrari" to "ferrari",
@@ -33,10 +22,6 @@ object TeamLogos {
         "cadillac" to "cadillac",
     )
 
-    /**
-     * Display names as the live feed and the results feeds spell them. Matched by normalised
-     * substring so "Haas F1 Team", "Kick Sauber" and "Oracle Red Bull Racing" all resolve.
-     */
     private val BY_NAME_FRAGMENT: List<Pair<String, String>> = listOf(
         "red bull" to "redbullracing",
         "racing bulls" to "racingbulls",

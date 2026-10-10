@@ -21,24 +21,14 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * Tracker icons for the Live Update progress bar: a driver's headshot when we can fetch one,
- * otherwise a team-coloured disc with the three-letter abbreviation.
- *
- * Icons are cached per driver for the lifetime of the process; the notification is rebuilt every
- * couple of seconds, so decoding a headshot each time would be wasteful.
- */
 object AvatarIcons {
 
-    /** Icon edge in pixels. Notification tracker icons are small; 128px is plenty. */
     private const val SIZE_PX = 128
 
     private val cache = ConcurrentHashMap<String, Icon>()
 
-    /** Keys of headshots whose download already failed, so we stop retrying them. */
     private val failed = ConcurrentHashMap.newKeySet<String>()
 
-    /** Stable cache key for a driver's preferred icon. */
     fun keyFor(driver: DriverTiming): String {
         val url = driver.headshotUrl?.trim().orEmpty()
         return if (url.isNotEmpty() && !failed.contains(url)) url else fallbackKey(driver)
@@ -47,13 +37,8 @@ object AvatarIcons {
     private fun fallbackKey(driver: DriverTiming): String =
         "tla:${driver.tla}:${driver.racingNumber}:${driver.teamColorHex.orEmpty()}"
 
-    /** Cached icon for [driver], or null if nothing has been produced for it yet. */
     fun cached(driver: DriverTiming): Icon? = cache[keyFor(driver)]
 
-    /**
-     * Returns the best icon available for [driver], downloading the headshot through Coil when
-     * needed. Never throws: any failure degrades to the team-colour disc.
-     */
     suspend fun load(context: Context, driver: DriverTiming): Icon {
         cached(driver)?.let { return it }
         val url = driver.headshotUrl?.trim().orEmpty()
@@ -69,7 +54,6 @@ object AvatarIcons {
         return fallback(driver)
     }
 
-    /** Team-coloured disc with the driver's TLA; always available, never hits the network. */
     fun fallback(driver: DriverTiming): Icon {
         val key = fallbackKey(driver)
         cache[key]?.let { return it }
@@ -96,13 +80,11 @@ object AvatarIcons {
 
     // ---------------------------------------------------------------- drawing
 
-    /** Centre-crops [source] into a circle and rings it with [ringColor]. */
     fun circleCrop(source: Bitmap, ringColor: Int): Bitmap {
         val output = Bitmap.createBitmap(SIZE_PX, SIZE_PX, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(output)
         val radius = SIZE_PX / 2f
 
-        // Background disc so transparent headshots still read against any wallpaper.
         val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ringColor }
         canvas.drawCircle(radius, radius, radius, bg)
 
@@ -131,7 +113,6 @@ object AvatarIcons {
         return output
     }
 
-    /** A filled disc in [color] with [label] centred on it in a contrasting colour. */
     fun teamCircleBitmap(label: String, color: Int): Bitmap {
         val output = Bitmap.createBitmap(SIZE_PX, SIZE_PX, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(output)
@@ -146,7 +127,6 @@ object AvatarIcons {
                 textAlign = Paint.Align.CENTER
                 textSize = SIZE_PX * 0.40f
             }
-            // Shrink until the label fits inside the disc with a small margin.
             val bounds = Rect()
             var guard = 0
             while (guard++ < 12) {
@@ -160,14 +140,12 @@ object AvatarIcons {
         return output
     }
 
-    /** Black on light team colours, white on dark ones. */
     private fun contrastingTextColor(color: Int): Int {
         val luminance =
             0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)
         return if (luminance > 160) Color.BLACK else Color.WHITE
     }
 
-    /** Drops every cached icon. Called when the service shuts down. */
     fun clear() {
         cache.clear()
         failed.clear()

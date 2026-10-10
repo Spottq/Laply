@@ -12,13 +12,11 @@ import java.io.IOException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-/** Shared lenient parser: every upstream here sends far more fields than the app reads. */
 internal val LenientJson: Json = Json {
     ignoreUnknownKeys = true
     isLenient = true
 }
 
-/** Suspends on OkHttp's async dispatcher and cancels the call when the coroutine is cancelled. */
 internal suspend fun Call.awaitBody(): String = suspendCancellableCoroutine { continuation ->
     continuation.invokeOnCancellation { runCatching { cancel() } }
     enqueue(object : Callback {

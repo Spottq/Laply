@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Samsung One UI widget attributes, read by Samsung's widget hosts from the appwidget-provider
-     XML (app: namespace): shared by the home-screen widgets and the lock-screen widget (whose own
-     extra attributes live in attrs_samsung_lock.xml). As declared by twidget, res/values/attrs.xml
-     (MIT, (c) 2026 Josh Skinner, github.com/thatjoshguy67/twidget). -->
+<!-- Read by Samsung's hosts by name. As declared by twidget (MIT, (c) 2026 Josh Skinner). -->
 <resources>
     <!-- Samsung OneUI widget style flags - required for launcher blur -->
     <attr name="widgetStyle" format="integer">

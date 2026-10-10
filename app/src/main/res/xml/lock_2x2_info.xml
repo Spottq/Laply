@@ -1,14 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Samsung One UI lock screen / AOD widget, 2x2 (tablets and foldables): overline, Grand Prix,
-    next session, countdown and the two sessions after it. widgetCategory 0x2000 is Samsung's
-    lock-screen category (stock launchers never list it). On the lock screen Samsung's 2x2 slot is
-    the "medium" size (Samsung Notes' 2x2 lock widget: widgetSize = lockWidgetSize = medium,
-    targetCell 2x2, ~118 x 131 dp); the user's LockWidgets project declares its 2x2 as "large",
-    so both are declared, with the same layout. The receiver ships disabled and is switched on at
-    run time on sw600dp / hinge devices only (SamsungLockWidgetLarge.syncEnabled), as LockWidgets
-    does, so phones never offer it.
--->
+<!-- widgetCategory 0x2000 is Samsung's lock-screen category. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"

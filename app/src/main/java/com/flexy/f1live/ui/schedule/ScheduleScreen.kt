@@ -120,7 +120,6 @@ private fun ScheduleList(
     contentPadding: PaddingValues,
     onOpenResults: (season: Int, round: Int, kind: SessionKind) -> Unit,
 ) {
-    // Large screens: one centred column rather than cards stretched edge to edge.
     CenteredColumn { gutter ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -209,7 +208,6 @@ private fun WeekendCard(
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .alpha(if (past) 0.55f else 1f)
-            // The current weekend stays open; the others fold with a tap.
             .then(if (highlighted) Modifier else Modifier.clickable { expanded = !expanded }),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -266,7 +264,6 @@ private fun WeekendCard(
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
                     )
                     val now = System.currentTimeMillis()
-                    // The next session of the season gets the hours around its start.
                     val next = if (highlighted) weekend.sessions.firstOrNull { !isFinished(it, now) } else null
                     weekend.sessions.forEach { session ->
                         val finished = isFinished(session, now)
@@ -283,7 +280,6 @@ private fun WeekendCard(
                             WeatherSessionRow(
                                 session = session,
                                 finished = finished,
-                                // What already ran has results instead.
                                 forecast = forecast.sessions[session.kind]?.takeUnless { finished },
                                 hours = hours,
                                 onClick = openResults,
@@ -296,10 +292,6 @@ private fun WeekendCard(
     }
 }
 
-/**
- * One line of an expanded weekend. A session that has already run opens its classification, so it
- * carries a chevron and a click target; a future one is plain text.
- */
 @Composable
 private fun SessionRow(session: ScheduledSession, finished: Boolean, onClick: () -> Unit) {
     Row(
@@ -323,11 +315,6 @@ private fun SessionRow(session: ScheduledSession, finished: Boolean, onClick: ()
     }
 }
 
-/**
- * [SessionRow] for the current weekend, the one with a forecast: the time moves under the name
- * to make room for the weather at the session's start, and the next session of the season gets the
- * hours around its start underneath.
- */
 @Composable
 private fun WeatherSessionRow(
     session: ScheduledSession,
@@ -392,7 +379,6 @@ private fun ResultsChevron() {
     )
 }
 
-/** The mini card under the next session: the sky, temperature and rain chance hour by hour. */
 @Composable
 private fun HoursStrip(hours: List<HourForecast>, modifier: Modifier = Modifier) {
     val content = LocalContentColor.current
@@ -430,7 +416,6 @@ private fun HoursStrip(hours: List<HourForecast>, modifier: Modifier = Modifier)
     }
 }
 
-/** A session counts as run - and therefore openable - two hours after it starts. */
 private const val SESSION_DONE_MILLIS = 2L * 60 * 60 * 1000
 
 private fun isFinished(session: ScheduledSession, now: Long): Boolean {

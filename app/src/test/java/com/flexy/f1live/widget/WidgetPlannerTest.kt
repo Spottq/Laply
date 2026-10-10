@@ -13,18 +13,12 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 
-/**
- * The widgets list the running session and the next ones, count down in hour-accurate text over a
- * day out and with a Chronometer under a day, and must be redrawn exactly when what they show
- * changes - never every minute.
- */
 class WidgetPlannerTest {
 
     private val minute = WidgetPlanner.MINUTE_MS
     private val hour = WidgetPlanner.HOUR_MS
     private val utc: ZoneId = ZoneOffset.UTC
 
-    /** Friday 12 Sep 2025 11:30 UTC. */
     private val base = LocalDateTime.of(2025, 9, 12, 11, 30).toInstant(ZoneOffset.UTC).toEpochMilli()
 
     private fun weekend(round: Int, name: String, vararg sessions: ScheduledSession) = RaceWeekend(
@@ -40,7 +34,6 @@ class WidgetPlannerTest {
 
     private val monza = weekend(
         16, "Italian Grand Prix",
-        // Out of order on purpose, plus one session without a time.
         ScheduledSession(SessionKind.RACE, "Race", base + 50 * hour),
         ScheduledSession(SessionKind.PRACTICE1, "Practice 1", base),
         ScheduledSession(SessionKind.PRACTICE2, "Practice 2", base + 4 * hour),
@@ -66,12 +59,10 @@ class WidgetPlannerTest {
 
     @Test
     fun entriesKeepTheRunningSessionAndDropFinishedOnes() {
-        // 30 min into FP1 (60 min long): FP1 is still listed, and live.
         val during = WidgetPlanner.entries(listOf(monza), now = base + 30 * minute)
         assertEquals("Practice 1", during.first().session.name)
         assertTrue(during.first().isLive(base + 30 * minute))
 
-        // One minute after its nominal end FP1 is gone.
         val after = WidgetPlanner.entries(listOf(monza), now = base + 61 * minute)
         assertEquals("Practice 2", after.first().session.name)
         assertFalse(after.first().isLive(base + 61 * minute))
@@ -106,9 +97,7 @@ class WidgetPlannerTest {
     @Test
     fun overADayIsDaysAndHoursRoundedDown() {
         val race = WidgetPlanner.entries(listOf(monza), base).first { it.session.kind == SessionKind.RACE }
-        // 50 h out, minus 30 min: 49 h 30 m -> "2d 1h".
         assertEquals(Countdown.Until(CountdownUnits.DaysHours(2, 1)), WidgetPlanner.countdown(race, base + 30 * minute))
-        // Exactly 24 h still shows days.
         assertEquals(Countdown.Until(CountdownUnits.DaysHours(1, 0)), WidgetPlanner.countdown(race, base + 26 * hour))
     }
 
@@ -116,14 +105,12 @@ class WidgetPlannerTest {
     fun underADayIsHoursAndMinutesThenMinutes() {
         val fp2 = WidgetPlanner.entries(listOf(monza), base + 2 * hour).first()
         val now = base + 2 * hour
-        // "in 1h 59m", never a ticking clock with seconds.
         assertEquals(Countdown.Until(CountdownUnits.HoursMinutes(1, 59)), WidgetPlanner.countdown(fp2, now + 30_000))
         assertEquals(Countdown.Until(CountdownUnits.HoursMinutes(2, 0)), WidgetPlanner.countdown(fp2, now))
         assertEquals(
             Countdown.Until(CountdownUnits.Minutes(5)),
             WidgetPlanner.countdown(fp2, base + 4 * hour - 5 * minute),
         )
-        // Under a minute still reads "1 min", never "0 min".
         assertEquals(
             Countdown.Until(CountdownUnits.Minutes(1)),
             WidgetPlanner.countdown(fp2, base + 4 * hour - 20_000),
@@ -134,7 +121,6 @@ class WidgetPlannerTest {
 
     @Test
     fun refreshOnTheNextHourBoundaryWhileTheTextShowsHours() {
-        // Only the race left, 49 h 30 m out: "2d 1h" becomes "2d 0h" at exactly 49 h to go.
         val raceOnly = WidgetPlanner.entries(listOf(monza), base + hour)
             .filter { it.session.kind == SessionKind.RACE }
         val t = base + 30 * minute
@@ -143,19 +129,16 @@ class WidgetPlannerTest {
 
     @Test
     fun underADayRefreshOnTheNextMinute() {
-        // FP2 at +4h, now 1 h 30 s in: "in 2h 59m" becomes "in 2h 58m" at exactly 2 h 59 m to go.
         val now = base + hour + 30_000
         val entries = WidgetPlanner.entries(listOf(monza), now)
         assertEquals("Practice 2", entries.first().session.name)
         assertEquals(base + 4 * hour - 179 * minute + 1, WidgetPlanner.nextRefreshAt(entries, now, utc))
-        // Last minute: "in 1 min" until FP2 starts and turns LIVE.
         val lastMinute = base + 4 * hour - 20_000
         assertEquals(base + 4 * hour, WidgetPlanner.nextRefreshAt(entries, lastMinute, utc))
     }
 
     @Test
     fun liveSessionRefreshesAtItsEnd() {
-        // The race running, nothing after it: the next redraw is its end.
         val now = base + 50 * hour + 10 * minute
         val entries = WidgetPlanner.entries(listOf(monza), now)
         assertEquals(base + 52 * hour, WidgetPlanner.nextRefreshAt(entries, now, utc))
@@ -163,7 +146,6 @@ class WidgetPlannerTest {
 
     @Test
     fun refreshAtMidnightAndNeverLaterThanTheSafetyNet() {
-        // Nothing left: local midnight or the 6 h safety net, whichever is first.
         val lateEvening = LocalDateTime.of(2025, 12, 20, 22, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
         val midnight = LocalDateTime.of(2025, 12, 21, 0, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
         assertEquals(midnight, WidgetPlanner.nextRefreshAt(emptyList(), lateEvening, utc))
@@ -187,12 +169,10 @@ class WidgetPlannerTest {
 
     @Test
     fun dayLabels() {
-        // base is Friday 11:30 UTC.
         assertEquals(DayLabel.TODAY, WidgetPlanner.dayLabel(base + 4 * hour, base, utc))
         assertEquals(DayLabel.TOMORROW, WidgetPlanner.dayLabel(base + 20 * hour, base, utc))
         assertEquals(DayLabel.THIS_WEEK, WidgetPlanner.dayLabel(base + 50 * hour, base, utc))
         assertEquals(DayLabel.LATER, WidgetPlanner.dayLabel(base + 7 * 24 * hour, base, utc))
-        // A live session that began before midnight still counts as today.
         assertEquals(DayLabel.TODAY, WidgetPlanner.dayLabel(base - 12 * hour, base, utc))
     }
 
@@ -202,7 +182,6 @@ class WidgetPlannerTest {
         assertEquals(1, WidgetPlanner.rowsThatFit(46f, 46f, 3f))
         assertEquals(1, WidgetPlanner.rowsThatFit(94f, 46f, 3f))
         assertEquals(2, WidgetPlanner.rowsThatFit(95f, 46f, 3f))
-        // A 4x3 One UI widget (~340 dp tall, 12 dp padding each side): six two-line rows.
         assertEquals(6, WidgetPlanner.rowsThatFit(316f, 46f, 3f))
         assertEquals(0, WidgetPlanner.rowsThatFit(100f, 0f, 3f))
     }

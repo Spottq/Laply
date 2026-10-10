@@ -1,9 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Background layer of the widget in the One UI blur style (widget/F1Widget.kt), drawn under the
-     content. One UI Home finds the view with @android:id/background and blurs the wallpaper behind
-     the widget when that view's own background is a translucent shape: the rounded shape here,
-     tinted at runtime with an alpha of 1..254 (setBackgroundTintList). A flat ColorDrawable makes
-     the widget see-through but is not blurred. As in twidget (MIT, (c) 2026 Josh Skinner). -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"

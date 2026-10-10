@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android 14+: the system's own Material 3 colour roles. -->
 <resources>
     <color name="widget_background">@android:color/system_surface_container_light</color>
     <color name="widget_inset">@android:color/system_surface_container_highest_light</color>

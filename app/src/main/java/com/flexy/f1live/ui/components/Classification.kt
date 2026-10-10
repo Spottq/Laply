@@ -45,30 +45,20 @@ import com.flexy.f1live.model.DriverTiming
 import com.flexy.f1live.model.SectorTiming
 import com.flexy.f1live.model.TyreStint
 
-/**
- * The classification card: header, one row per driver, rounded foot.
- *
- * Shared by the Live screen and the past-session results screen - the two show the same table, one
- * fed by a socket and one by a finished result set, so the rows live here rather than in either.
- */
-
 val ClassificationCorner = 28.dp
 val ClassificationHorizontal = 16.dp
 
 val OverallFastestColor = Color(0xFFB14BF4)
 val PersonalFastestColor = Color(0xFF3FB559)
 
-/** Default column labels of the expandable detail row. */
 val SectorLabels = listOf("S1", "S2", "S3")
 
-/** Qualifying results carry Q1/Q2/Q3 in the same three slots. */
 val QualifyingLabels = listOf("Q1", "Q2", "Q3")
 
 @Composable
 fun ClassificationCardTop(
     title: String,
     isRace: Boolean,
-    /** Space outside the card; a large-screen pane supplies its own margins and passes 0. */
     horizontalPadding: Dp = ClassificationHorizontal,
 ) {
     Column(
@@ -135,15 +125,9 @@ fun DriverRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     showPit: Boolean = true,
-    /** Purple "FL" badge for the driver credited with the fastest lap of a finished race. */
     fastestLap: Boolean = false,
     sectorLabels: List<String> = SectorLabels,
-    /**
-     * Show the driver's best sectors of the session instead of the last lap's. The feed's live
-     * sectors are whatever the car did on its most recent lap - meaningless once the flag is out.
-     */
     useBestSectors: Boolean = false,
-    /** Space outside the card; a large-screen pane supplies its own margins and passes 0. */
     horizontalPadding: Dp = ClassificationHorizontal,
 ) {
     val dimmed = driver.knockedOut || driver.retired || driver.stopped
@@ -234,8 +218,6 @@ fun DriverRow(
                     sectors = if (best) driver.bestSectors else driver.sectors,
                     labels = if (best) sectorLabels.map { "Best " + it } else sectorLabels,
                 )
-                // Stops only mean something in a race: in practice and qualifying every run
-                // ends in the pits, and the tyre chain already shows the runs.
                 TyreRow(driver = driver, showPitStops = isRace)
             }
         }
@@ -280,10 +262,6 @@ fun SectorRow(sectors: List<SectorTiming>, labels: List<String> = SectorLabels) 
     }
 }
 
-/**
- * The tyre history under the sectors: one chip per stint with the laps it lasted, oldest first,
- * and the pit stops beside it. Nothing for a source that publishes neither.
- */
 @Composable
 fun TyreRow(driver: DriverTiming, showPitStops: Boolean) {
     val stops = if (showPitStops) driver.pitStops else 0
@@ -293,8 +271,6 @@ fun TyreRow(driver: DriverTiming, showPitStops: Boolean) {
             .fillMaxWidth()
             .padding(start = 38.dp, top = 2.dp, bottom = 4.dp),
     ) {
-        // Two sector columns wide; with SectorRow's two 16 dp gaps after it, the stops sit
-        // exactly under S3.
         Column(modifier = Modifier.weight(2f)) {
             if (driver.stints.isNotEmpty()) {
                 DetailLabel("Tyres")
@@ -305,9 +281,6 @@ fun TyreRow(driver: DriverTiming, showPitStops: Boolean) {
             Spacer(Modifier.width(32.dp))
             Column(modifier = Modifier.weight(1f)) {
                 DetailLabel("Pit stops")
-                // The laps come from the stints; when they do not add up to the count (a
-                // red-flag tyre change, a stop the stints have not caught up with) the count
-                // stands alone.
                 PitStopsValue(stops, driver.pitStopLaps.takeIf { it.size == stops })
             }
         }
@@ -327,7 +300,6 @@ private fun DetailLabel(text: String) {
 private fun TyreChain(stints: List<TyreStint>) {
     FlowRow(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         stints.forEachIndexed { index, stint ->
-            // Separator, chip and laps stay together when a long practice chain wraps.
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (index > 0) {
                     Text(
@@ -344,7 +316,6 @@ private fun TyreChain(stints: List<TyreStint>) {
                         text = stint.laps.toString(),
                         style = MaterialTheme.typography.bodyMedium,
                         fontFamily = MonoFamily,
-                        // The last stint is the set on the car now.
                         fontWeight = if (index == stints.lastIndex) FontWeight.Bold else FontWeight.Medium,
                     )
                 }
@@ -353,10 +324,6 @@ private fun TyreChain(stints: List<TyreStint>) {
     }
 }
 
-/**
- * The compound's initial on its colour: a filled disc for a new set, a faded one with a dashed rim
- * for a set that had already been run.
- */
 @Composable
 private fun TyreChip(stint: TyreStint) {
     val tyre = tyreColor(stint.compound)
@@ -396,7 +363,6 @@ private fun TyreChip(stint: TyreStint) {
     }
 }
 
-/** "2 · L15, L38": the count, then the lap of each stop when it is known. */
 @Composable
 private fun PitStopsValue(stops: Int, laps: List<Int>?) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Strings owned by the Settings screen (com.flexy.f1live.ui.settings). -->
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
 
@@ -41,15 +40,13 @@
     <string name="settings_check_now_desc">Look for a new release on GitHub</string>
     <string name="settings_checking">Checking&#8230;</string>
     <string name="update_up_to_date">You’re up to date</string>
-    <!-- %1$s is the new version, e.g. "1.1". -->
     <string name="update_available">Update %1$s available</string>
     <string name="update_check_failed">Couldn’t check for updates</string>
     <string name="update_download">Download</string>
 
-    <!-- Update notification (com.flexy.f1live.update). -->
+    <!-- Update notification -->
     <string name="channel_updates_name">App updates</string>
     <string name="channel_updates_desc">A new version of Laply is available</string>
-    <!-- %1$s is the new version, e.g. "1.1". -->
     <string name="update_notif_title">Laply %1$s is available</string>
     <string name="update_notif_text">Tap to download</string>
     <string name="update_release_notes">Release notes</string>

@@ -41,39 +41,15 @@ import okhttp3.WebSocketListener
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
-/**
- * Live timing over the official F1 SignalR Core endpoint.
- *
- * Wire protocol (no authentication required for the topics we subscribe to):
- *  1. `POST /signalrcore/negotiate?negotiateVersion=1` -> `connectionToken` plus `AWSALB` cookies
- *     that pin us to the load-balancer node; without those cookies the socket dies with 1006.
- *  2. WebSocket to `/signalrcore?id=<token>` carrying those cookies, a browser User-Agent and Origin.
- *  3. Handshake `{"protocol":"json","version":1}` + record separator (0x1e); server answers `{}`.
- *  4. `Subscribe` invocation; the completion (type 3) carries the full snapshot in `result`.
- *  5. `feed` invocations (type 1) carry `[topic, partialDelta, utcTimestamp]` which are deep-merged
- *     into the snapshot by [JsonMerge]. Type 6 is a ping (echoed back), type 7 a close.
- *
- * The merged [JsonObject] is re-parsed into [LiveSessionState] at most every [THROTTLE_MS]
- * milliseconds so a busy qualifying session does not spam the UI.
- */
 class F1SignalRClient(httpClient: OkHttpClient) : LiveTimingClient {
 
-    /**
-     * The socket: no read timeout (the feed can be quiet for a while between our pings), but a short
-     * connect timeout - the shared client's 15 s is far longer than a healthy handshake needs, and
-     * every second spent on a black-holed connect is a second before the next reconnect attempt.
-     */
     private val http: OkHttpClient = httpClient.newBuilder()
         .connectTimeout(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS)
-        .pingInterval(0, TimeUnit.MILLISECONDS) // we send SignalR-level pings ourselves
+        .pingInterval(0, TimeUnit.MILLISECONDS)
         .build()
 
-    /**
-     * `negotiate` is a plain request/response and must never inherit the socket's infinite read
-     * timeout: a CloudFront edge that accepts the connection and then stalls used to park the
-     * connection loop forever, so the primary never retried and never recovered.
-     */
+    // Not the socket's infinite read timeout: a stalled CloudFront edge would hang negotiate forever.
     private val negotiateHttp: OkHttpClient = httpClient.newBuilder()
         .connectTimeout(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         .readTimeout(NEGOTIATE_READ_TIMEOUT_MS, TimeUnit.MILLISECONDS)
@@ -216,7 +192,6 @@ class F1SignalRClient(httpClient: OkHttpClient) : LiveTimingClient {
         }
     }
 
-    /** The load balancer pins the websocket to the node that answered `negotiate`. */
     private fun awsCookies(response: Response): String =
         response.headers("Set-Cookie")
             .map { it.substringBefore(';').trim() }
@@ -225,7 +200,6 @@ class F1SignalRClient(httpClient: OkHttpClient) : LiveTimingClient {
 
     // ---------------------------------------------------------------- messages
 
-    /** A single websocket frame may carry several 0x1e-separated JSON records. */
     private fun handlePayload(
         payload: String,
         ws: WebSocket,
@@ -248,7 +222,6 @@ class F1SignalRClient(httpClient: OkHttpClient) : LiveTimingClient {
         onSnapshot: () -> Unit,
     ) {
         when (message["type"]?.primitiveOrNull()?.intOrNull) {
-            // Handshake response: "{}" on success, {"error": "..."} otherwise.
             null -> message["error"]?.primitiveOrNull()?.contentOrNull?.let {
                 throw IOException("SignalR handshake rejected: $it")
             }
@@ -277,14 +250,12 @@ class F1SignalRClient(httpClient: OkHttpClient) : LiveTimingClient {
         if (message["target"]?.primitiveOrNull()?.contentOrNull != "feed") return
         val arguments = message["arguments"] as? JsonArray ?: return
         val topic = arguments.getOrNull(0)?.primitiveOrNull()?.contentOrNull ?: return
-        // CarData.z / Position.z are zlib+base64 and need an F1 TV subscription; we never subscribe.
         if (topic.isCompressedTopic()) return
         val delta = arguments.getOrNull(1) ?: return
         snapshot = JsonMerge.mergeTopic(snapshot, topic, delta)
         dirty.trySend(Unit)
     }
 
-    /** Re-parses at most once per [THROTTLE_MS]; the conflated channel keeps the trailing update. */
     private suspend fun emitLoop(dirty: ReceiveChannel<Unit>) {
         for (signal in dirty) {
             publish()
@@ -292,7 +263,6 @@ class F1SignalRClient(httpClient: OkHttpClient) : LiveTimingClient {
         }
     }
 
-    /** When [publish] last pushed a state out, so an idle feed still emits a periodic heartbeat. */
     private var lastPublishedAtMillis = 0L
 
     private fun publish() {
@@ -300,14 +270,9 @@ class F1SignalRClient(httpClient: OkHttpClient) : LiveTimingClient {
         if (current.isEmpty()) return
         try {
             val parsed = LiveStateParser.parse(current, isConnected = true)
-            // A StateFlow already drops equal values, but `lastUpdateUtcMillis` is stamped on every
-            // parse, so an unchanged snapshot still looked "new" and pushed a fresh state - and a
-            // fresh DriverTiming for all 22 drivers - into the UI four times a second. Compare
-            // everything except that stamp.
             val previous = _state.value
             val unchanged = parsed.copy(lastUpdateUtcMillis = previous.lastUpdateUtcMillis) == previous
-            // Unchanged snapshots must still get through every so often: CompositeLiveTimingClient's
-            // watchdog reads "no state for 20s" as a blocked feed and switches to the ESPN fallback.
+            // Still re-emit now and then: the composite's watchdog reads a silent feed as blocked.
             if (unchanged && parsed.lastUpdateUtcMillis - lastPublishedAtMillis < HEARTBEAT_MS) return
             lastPublishedAtMillis = parsed.lastUpdateUtcMillis
             _state.value = parsed
@@ -355,7 +320,6 @@ class F1SignalRClient(httpClient: OkHttpClient) : LiveTimingClient {
         private const val NEGOTIATE_URL =
             "https://livetiming.formula1.com/signalrcore/negotiate?negotiateVersion=1"
 
-        /** OkHttp upgrades an https URL to wss itself; HttpUrl cannot parse the wss scheme. */
         private const val WS_URL = "https://livetiming.formula1.com/signalrcore"
         private const val ORIGIN = "https://www.formula1.com"
         private const val USER_AGENT =
@@ -387,7 +351,6 @@ class F1SignalRClient(httpClient: OkHttpClient) : LiveTimingClient {
         private const val PING_INTERVAL_MS = 15_000L
         private const val THROTTLE_MS = 250L
 
-        /** Longest silence allowed before an unchanged snapshot is re-emitted as a heartbeat. */
         private const val HEARTBEAT_MS = 5_000L
         private const val MIN_BACKOFF_MS = 1_000L
         private const val MAX_BACKOFF_MS = 30_000L

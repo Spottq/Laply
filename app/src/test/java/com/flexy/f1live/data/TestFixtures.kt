@@ -3,7 +3,6 @@ package com.flexy.f1live.data
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
-/** Loads the JSON captured from the live feed during 2026 Italian GP qualifying. */
 internal object TestFixtures {
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }

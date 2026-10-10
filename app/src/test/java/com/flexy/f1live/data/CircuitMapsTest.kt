@@ -8,10 +8,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * The CDN slug table. Every name asserted here was checked against media.formula1.com and answers
- * HTTP 200; the two nulls are circuits F1 has never published a map for.
- */
 class CircuitMapsTest {
 
     @Test
@@ -165,7 +161,6 @@ class CircuitMapsTest {
             "https://media.formula1.com/image/upload/f_png,w_1200/common/f1/2026/track/2026trackmadringdetailed.png",
             CircuitMaps.f1DetailedMapUrl(weekend(country = "Spain", locality = "Madrid", circuit = "Madring")),
         )
-        // Seasons past the newest verified set reuse it.
         assertEquals(
             "https://media.formula1.com/image/upload/f_png,w_1200/common/f1/2026/track/2026trackbakudetailed.png",
             CircuitMaps.f1DetailedMapUrl(baku.copy(season = 2027)),
@@ -184,7 +179,6 @@ class CircuitMapsTest {
         assertEquals(16, CircuitMaps.turnsOf(weekend(country = "UAE", circuit = "Yas Marina Circuit")))
         assertEquals(20, CircuitMaps.turnsOf(weekend(country = "USA", locality = "Austin", circuit = "Circuit of the Americas")))
         assertEquals(17, CircuitMaps.turnsOf(weekend(country = "USA", locality = "Las Vegas", circuit = "Las Vegas Strip Circuit")))
-        // No outline, no count: never a guess.
         assertNull(CircuitMaps.turnsOf(weekend(country = "Neverland")))
     }
 

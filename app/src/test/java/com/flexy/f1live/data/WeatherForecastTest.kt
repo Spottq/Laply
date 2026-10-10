@@ -11,12 +11,10 @@ import org.junit.Test
 import java.time.Instant
 import java.time.LocalDate
 
-/** Open-Meteo's 16-day answer, cut down to the race weekend in the circuit's own time zone. */
 class WeatherForecastTest {
 
     private fun utc(iso: String) = Instant.parse(iso).toEpochMilli()
 
-    // Austin runs on UTC-5 in October: Friday's 01:00Z sprint qualifying is Thursday evening there.
     private val austin = RaceWeekend(
         season = 2026, round = 19, name = "United States Grand Prix", country = "USA",
         locality = "Austin", circuitName = "Circuit of the Americas", countryCode = "us",
@@ -52,7 +50,6 @@ class WeatherForecastTest {
     @Test
     fun keepsTheWeekendDaysInLocalTime() {
         val forecast = WeatherRepository.parseWeekendForecast(body, austin)!!
-        // Thursday is not a session day locally; Saturday has no session either.
         assertEquals(
             listOf(LocalDate.of(2026, 10, 23), LocalDate.of(2026, 10, 25)),
             forecast.days.map { it.date },
@@ -67,7 +64,6 @@ class WeatherForecastTest {
     fun readsTheHourEachSessionStartsIn() {
         val sessions = WeatherRepository.parseWeekendForecast(body, austin)!!.sessions
         assertEquals(27.4, sessions.getValue(SessionKind.PRACTICE1).tempC!!, 0.0)
-        // 01:00Z is 20:00 the evening before at the circuit.
         assertEquals(55, sessions.getValue(SessionKind.SPRINT_QUALIFYING).rainChancePct)
         assertEquals(false, sessions.getValue(SessionKind.SPRINT_QUALIFYING).isDay)
         assertEquals(0, sessions.getValue(SessionKind.RACE).weatherCode)
@@ -76,7 +72,6 @@ class WeatherForecastTest {
     @Test
     fun keepsTheHoursInUtc() {
         val hours = WeatherRepository.parseWeekendForecast(body, austin)!!.hours
-        // 12:00 in Austin on 23 October is 17:00 UTC.
         assertEquals(utc("2026-10-23T17:00:00Z"), hours.first().utcMillis)
         assertEquals(false, hours[1].isDay)
     }
@@ -88,9 +83,7 @@ class WeatherForecastTest {
             HourForecast(utc("2026-10-23T%02d:00:00Z".format(h)), 0, h.toDouble(), 0)
         }
         val forecast = WeekendForecast(days = emptyList(), sessions = emptyMap(), hours = hours)
-        // 11:30 less two hours is 9:30, rounded up to 10:00: 10, 11, 12 and 13.
         assertEquals(listOf(10.0, 11.0, 12.0, 13.0), forecast.hoursAround(start).map { it.tempC })
-        // On the hour, the window starts exactly two hours before.
         assertEquals(13.0, forecast.hoursAround(utc("2026-10-23T15:00:00Z")).first().tempC!!, 0.0)
     }
 

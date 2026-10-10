@@ -1,4 +1,2 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One UI Home: the cell sizes the standings widgets may be resized to (receiver meta-data
-     com.sec.android.appwidget.widgetinfo): two rows and up, unlike the session widget. -->
 <metadata supportCellSizes="@array/widget_standings_cell_sizes" />

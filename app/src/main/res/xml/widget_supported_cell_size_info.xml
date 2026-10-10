@@ -1,4 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One UI Home: the cell sizes the widget may be resized to (receiver meta-data
-     com.sec.android.appwidget.widgetinfo). From blur-widget-demo (MIT, (c) 2026 Josh Skinner). -->
+<!-- From blur-widget-demo (MIT, (c) 2026 Josh Skinner). -->
 <metadata supportCellSizes="@array/widget_support_cell_sizes" />

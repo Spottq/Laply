@@ -7,12 +7,6 @@ import com.flexy.f1live.model.TrackFlag
 import com.flexy.f1live.ui.SampleData
 import java.util.Locale
 
-/**
- * A scripted race for the "Test Live Update" button in Settings: the real notification pipeline
- * fed with fake timing, so the Live Update (and the Android 17 MetricStyle) can be looked at
- * between sessions. The gap P1 -> P2 closes into DRS range, then a Safety Car bunches the field,
- * and the last frames are the chequered flag.
- */
 object LiveDemo {
 
     const val FRAME_COUNT = 27
@@ -21,10 +15,8 @@ object LiveDemo {
     private const val TOTAL_LAPS = 53
     private const val FIRST_LAP = 30
 
-    /** Frames that run behind the Safety Car. */
     private val SAFETY_CAR = 16..19
 
-    /** Frames after the chequered flag. */
     private const val FIRST_FINISHED = 24
 
     fun frame(index: Int): LiveSessionState {
@@ -32,7 +24,6 @@ object LiveDemo {
         val finished = step >= FIRST_FINISHED
         val underSc = step in SAFETY_CAR
         val afterSc = step > SAFETY_CAR.last
-        // P2 closes from 2.4 s at 0.13 s a frame; the Safety Car squeezes everything to ~0.4 s.
         val gapP2 = when {
             underSc || afterSc -> 0.412 + (step - SAFETY_CAR.first) * 0.05
             else -> (2.4 - step * 0.13).coerceAtLeast(0.35)
@@ -60,7 +51,6 @@ object LiveDemo {
                 inPit = false,
                 knockedOut = false,
                 fastestLap = i == 1,
-                // The leader finds a little time every few laps, so the best-lap cell moves too.
                 bestLapTime = if (i == 0) "1:21.%03d".format(Locale.US, 412 - (step / 4) * 37) else base.bestLapTime,
             )
         }

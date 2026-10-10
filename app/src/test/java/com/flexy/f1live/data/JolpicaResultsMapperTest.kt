@@ -11,7 +11,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Ergast/Jolpica payloads -> the shared classification model. */
 class JolpicaResultsMapperTest {
 
     private val raceSession = ScheduledSession(SessionKind.RACE, "Race", 1_756_992_000_000L)
@@ -29,7 +28,6 @@ class JolpicaResultsMapperTest {
         assertEquals(SessionKind.RACE, state.sessionKind)
         assertEquals(5, state.drivers.size)
         assertEquals(listOf(1, 2, 3, 4, 5), state.drivers.map { it.position })
-        // Longest distance anyone covered - what the screen calls the race length.
         assertEquals(72, state.totalLaps)
 
         val winner = state.drivers[0]
@@ -38,7 +36,6 @@ class JolpicaResultsMapperTest {
         assertEquals("McLaren", winner.teamName)
         assertEquals("F47600", winner.teamColorHex)
         assertEquals("au", winner.countryCode)
-        // The winner shows "Leader" in the gap column, so the total time rides in the second slot.
         assertEquals("", winner.gapToLeader)
         assertEquals("1:38:29.849", winner.lastLapTime)
         assertEquals("1:12.271", winner.bestLapTime)
@@ -75,7 +72,6 @@ class JolpicaResultsMapperTest {
     fun `classified statuses cover Finished, Lapped and lap deficits`() {
         assertTrue(JolpicaResultsMapper.isClassifiedStatus("Finished"))
         assertTrue(JolpicaResultsMapper.isClassifiedStatus("+2 Laps"))
-        // Jolpica spells a classified car that is laps down "Lapped", where Ergast said "+1 Lap".
         assertTrue(JolpicaResultsMapper.isClassifiedStatus("Lapped"))
         assertFalse(JolpicaResultsMapper.isClassifiedStatus("Collision"))
         assertFalse(JolpicaResultsMapper.isClassifiedStatus("Engine"))
@@ -101,7 +97,6 @@ class JolpicaResultsMapperTest {
 
         val pole = state.drivers[0]
         assertEquals("NOR", pole.tla)
-        // Best of Q3/Q2/Q1: the last part the driver actually ran.
         assertEquals("1:08.662", pole.bestLapTime)
         assertEquals(listOf("1:09.123", "1:08.900", "1:08.662"), pole.sectors.map { it.value })
         assertFalse(pole.knockedOut)

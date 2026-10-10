@@ -20,7 +20,6 @@ data class ResultsUiState(
     val weekend: RaceWeekend? = null,
     val session: ScheduledSession? = null,
     val state: LiveSessionState? = null,
-    /** Racing number credited with the fastest lap, shown as an "FL" chip on that row. */
     val fastestLapRacingNumber: String? = null,
     val mapUrl: String? = null,
     val error: String? = null,
@@ -37,13 +36,6 @@ data class ResultsUiState(
     val drivers get() = state?.drivers.orEmpty()
 }
 
-/**
- * One finished session, addressed by `{season}/{round}/{kind}` from the schedule.
- *
- * The weekend itself comes from the season calendar (already cached by the schedule screen), the
- * classification from [com.flexy.f1live.data.SessionResultsRepository] - disk first, network
- * second - and the track map from [com.flexy.f1live.data.CircuitMapResolver].
- */
 class ResultsViewModel(
     private val season: Int,
     private val round: Int,
@@ -80,7 +72,6 @@ class ResultsViewModel(
                     mapUrl = Graph.circuitMaps.cached(weekend),
                 )
             }
-            // A Wikipedia lookup only happens for the handful of circuits F1 has no map for.
             launch {
                 val resolved = Graph.circuitMaps.resolve(weekend)
                 if (resolved != null) _uiState.update { it.copy(mapUrl = resolved) }
